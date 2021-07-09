@@ -536,6 +536,7 @@ name = "macro-test"
 version = "0.1.0"
 dependencies = [
  "macroquad",
+ "miniquad",
  "rand",
 ]
 
