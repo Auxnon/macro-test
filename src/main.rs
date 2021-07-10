@@ -2,13 +2,22 @@
 use macroquad::prelude::*;
 use std::num;
 
+
+mod imagehelper;
+
+
 #[macroquad::main("Kiwi")]
 async fn main() {
+
     let iwidth=(screen_width()as u16)/4;
     let iheight=(screen_height()as u16)/4;
 
     let birb: Texture2D = load_texture("assets/birbo.png").await.unwrap();
-    let birb_n: Texture2D = load_texture("assets/birbo_n.png").await.unwrap();
+    let birb_n_img: Image = load_image("assets/birbo_n.png").await.unwrap();
+    let birb_n: Texture2D =Texture2D::from_image(&birb_n_img); //load_texture("assets/birbo_n.png").await.unwrap();
+    let immm=imagehelper::flip_red(&birb_n_img);
+    println!("returned ${}", immm.get_image_data()[((13) as usize)][2]);
+    let birb_nf: Texture2D = Texture2D::from_image(&immm);
 
     let mut image = Image::gen_image_color(iwidth,iheight, WHITE);
     let texture = Texture2D::from_image(&image);
@@ -19,6 +28,7 @@ async fn main() {
     
     let im=get_screen_data();
     let textureFirst = Texture2D::from_image(&im);
+    textureFirst.set_filter(FilterMode::Nearest);
 
     let stage = {
         let InternalGlContext {
@@ -47,7 +57,7 @@ async fn main() {
         LENS_VERTEX_SHADER,
         LENS_FRAGMENT_SHADER,
         MaterialParams {
-            uniforms: vec![("Center".to_owned(), UniformType::Float2),("ray".to_owned(), UniformType::Float2)],
+            uniforms: vec![("Center".to_owned(), UniformType::Float2),("ray".to_owned(), UniformType::Float2),("resolution".to_owned(), UniformType::Float2)],
             textures: vec![
                 //"Texture".to_owned() // this one is defined by Macroquad. assign other manually if needed.
                 "normals".to_owned()
@@ -106,6 +116,7 @@ async fn main() {
 
         lens_material.set_uniform("Center", lens_center);
         lens_material.set_uniform("ray", (delta.0/r,delta.1/r));
+        lens_material.set_uniform("resolution", (iwidth as f32,iheight as f32));
         
 
         for i in 0..array.len() {
@@ -128,14 +139,14 @@ async fn main() {
             }
             
             draw_texture_ex(
-                birb_n,
+                if dir {birb_n} else {birb_nf},
                 x-16.,
                 y-16.,
                 WHITE,
                 DrawTextureParams {
                     source: Some(Rect::new((anim as f32)*32.,0.,32.,32.)),
                     dest_size: Some(vec2(128.,128.)),
-                    //flip_x:dir,
+                    flip_x:dir,
                     ..Default::default()
                 },
             );
@@ -181,7 +192,7 @@ async fn main() {
         textureFirst.update(&get_screen_data());
         lens_material.set_texture("normals", textureFirst);
 
-        clear_background(BLACK);
+        clear_background(WHITE);
         //draw_texture(textureFirst, 64.,64.,WHITE);
         //get_active_render_pass();
         //texture()
@@ -199,14 +210,15 @@ async fn main() {
                 DrawTextureParams {
                     source: Some(Rect::new((anim as f32)*32.,0.,32.,32.)),
                     dest_size: Some(vec2(128.,128.)),
-                    //flip_x:dir,
+                    flip_x:array[i].2,
                     ..Default::default()
                 },
             );
         }
        
         gl_use_material(lens_material);
-        draw_circle(screen_width()/2., screen_height()/2., 350.0, RED);
+        draw_rectangle( 0.,0.,screen_width(),screen_height(), RED);
+        //draw_circle(screen_width()/2., screen_height()/2., 350.0, RED);
         
         gl_use_default_material();
             
@@ -241,7 +253,9 @@ precision lowp float;
 varying vec2 uv;
 varying vec2 uv_screen;
 varying vec2 center;
+
 uniform vec2 ray;
+uniform vec2 resolution;
 uniform sampler2D normals;
 uniform sampler2D _ScreenTexture;
 void main() {
@@ -250,25 +264,34 @@ void main() {
     vec2 uv_zoom = vector * gradient + center;
     vec2 n=normalize(center);
 
-    vec4 col = texture2D(normals, uv_screen);
+    vec4 col = texture2D(_ScreenTexture, uv_screen);
     if(col.a>.1){
-        vec3 n=normalize(vec3(col.r-.5,.5-col.g,col.b-.5));
-        vec2 v=normalize(vector);
-        float c=normalize(vec2(n.x*v.x,n.y*v.x)).x;
-        //t = glm::normalize(t - n * glm::dot(n, t));
-        //vec2 uv2 = normalize(ray-n*dot(n,ray));//(uv-0.5*uv_screen.xy)/uv_screen.y;
-        float f = dot(vec3(ray,0),n);
-        float f2 = dot(vec3((ray+vec2(.1,0),0)),n);
-        float f3 = dot(vec3((ray-vec2(.1,0),0)),n);
+        vec2 ints=vec2(floor(uv_screen.x*resolution.x)/resolution.x,floor(uv_screen.y*resolution.y)/resolution.y);
+        vec4 norms=texture2D(normals,ints);
+        if(norms.b<1.){
+            vec3 n=normalize(vec3(norms.r-.5,.5-norms.g,norms.b-.5));
+            vec2 v=normalize(vector);
+            float c=normalize(vec2(n.x*v.x,n.y*v.x)).x;
+            //t = glm::normalize(t - n * glm::dot(n, t));
+            //vec2 uv2 = normalize(ray-n*dot(n,ray));//(uv-0.5*uv_screen.xy)/uv_screen.y;
+            float f = dot(vec3(ray,0),n);
+           // float f2 = dot(vec3((ray+vec2(.1,0),0)),n);
+            //float f3 = dot(vec3((ray-vec2(.1,0),0)),n);
+
+
+            //f=floor(f*3.)/3.;
+/*
+            if(floor(mod((ints.x*resolution.x+ints.y*resolution.y),(1.-f)*3.))==0.){
+                f=1.;
+            } else{
+                f=0.;
+            }*/
         
-       f=(f+f2+f3)/3.;
-       // if(f<.8)f=0.;
-       
-        //f=max(min(f,.2),.1);
-        //f=floor(f*1.5)/1.5;
-        f=floor(f*3.)/3.;
-        col=vec4(1,0,1,0);
-        gl_FragColor = mix(col*.6,col,f);//vec4(f,0.,0.,f);
+            //col=vec4(1,0,1,0);
+            gl_FragColor = mix(col*.6,col,f);//vec4(f,0.,0.,f);
+        }else{
+            gl_FragColor = vec4(col);
+        }
     }else{ 
         gl_FragColor = vec4(col);
     }
@@ -295,8 +318,6 @@ void main() {
     gl_Position = res;
 }
 ";
-
-
 
 
 
