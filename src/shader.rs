@@ -8,8 +8,10 @@ uniform vec2 ray;
 uniform vec2 resolution;
 uniform sampler2D normals;
 uniform sampler2D albedo;
+uniform sampler2D remap;
 uniform sampler2D _ScreenTexture;
 uniform float ratio;
+uniform float time;
 void main() {
     float gradient = length(uv);
     vec2 vector=(uv_screen - center);
@@ -50,8 +52,8 @@ void main() {
         
             if(uv_screen.x>.5){
                 
-                gl_FragColor = mix(alb*.6,alb,f);
-                //gl_FragColor = vec4(alb);
+               // gl_FragColor = mix(alb*.6,alb,f);
+                gl_FragColor = vec4(alb);
             }else{
                 //.2 to .6
                 if(f>=.4 && f<.6){
@@ -83,12 +85,23 @@ void main() {
                 }else{
                     f=1.;
                 }*/
-                gl_FragColor = mix(alb*.6,alb,f);
+                //$246 9
+                //gb 48 96 130 255
+                //63 63 116 255
+                float r=63./256.;
+                float g=63./256.;
+                float b=116./256.;
+                //(floor(r*16.)+floor(b*16.)*16.)/128. +
+                //(g+16.)/32.
+                vec4 c2=texture2D(remap,vec2((floor(alb.r*16.)/256.+floor(alb.b*16.)/16.),.5+alb.g/2.));  //(alb.x/16.+alb.z)/16.
+                vec4 c=texture2D(remap, vec2(255./256., mod(uv_screen.y*16.,1.))); //vec2((alb.x)/256.+(alb.z)/16.
+                gl_FragColor = mix(c2,alb,0.);
             }
             //gl_FragColor = vec4(col);//vec4(1,0,0,1);//mix(col*.6,col,f);//vec4(f,0.,0.,f);
         }else{
             gl_FragColor = vec4(alb);
         }
+        //gl_FragColor=texture2D(remap, vec2(uv_screen.x*2.,uv_screen.y*8.));
     }else{ 
         gl_FragColor = vec4(alb);
     }
