@@ -31,6 +31,7 @@ async fn main() {
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
     ];
+    entity::load_ents();
 
     /*****
      * Test One
@@ -69,8 +70,8 @@ async fn main() {
                 color_img.get_image_data()[((i + 64) as usize)],
             ],
         );*/
-        println!("{} rgb {} {} {} {}", i, c[0], c[1], c[2], c[3]);
-        println!("ci ${} ${}", (x + z * 16) as f32 / 256., y as f32 / 32.);
+        //println!("{} rgb {} {} {} {}", i, c[0], c[1], c[2], c[3]);
+        //println!("ci ${} ${}", (x + z * 16) as f32 / 256., y as f32 / 32.);
     }
 
     let color_lookup = Texture2D::from_image(&lookup_image);

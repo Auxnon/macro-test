@@ -1,0 +1,8 @@
+(
+    name: "cloud",
+    sprite: "cloud-test",
+    anims: {
+        "idle":0,
+    },
+    logic: "slow-right-bg-particle"
+)

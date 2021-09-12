@@ -10,3 +10,5 @@ miniquad = "0.3.0-alpha.36"
 
 macroquad = "0.3.6"
 rand = "0.8.4"
+ron = "0.6.5"
+serde =""
