@@ -1,7 +1,23 @@
 use macroquad::prelude::*;
 
-pub fn set(n: u8, x: u16, y: u16) {
-    //draw
+use crate::Layer;
+
+pub async fn create_template(texture: &str) -> TileTemplate {
+    let out = [texture, ".png"].join("");
+    let nout = [texture, "_n.png"].join("");
+    let textur: &str = &*out;
+    let normal: &str = &*nout; //explicit reborrowing, just to covnert our dynamic String to a static str, wow!
+                               //s.push_str("_n");
+    TileTemplate {
+        texture: load_texture(textur).await.unwrap(),
+        normals: load_texture(normal).await.unwrap(),
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct TileTemplate {
+    texture: Texture2D,
+    normals: Texture2D,
 }
 
 #[derive(Copy, Clone)]
@@ -16,12 +32,12 @@ pub struct Tile {
       }
 
   }*/
+#[derive(Copy, Clone)]
 pub struct TileBlock {
     x: u32,
     y: u32,
     array: [[Tile; 20]; 12],
-    texture: Texture2D,
-    normals: Texture2D,
+    template: TileTemplate,
 }
 fn int_to_tile(tiles: [[u8; 20]; 12]) -> [[Tile; 20]; 12] {
     let mut ar = [[Tile { id: 10, x: 0, y: 0 }; 20]; 12];
@@ -29,55 +45,43 @@ fn int_to_tile(tiles: [[u8; 20]; 12]) -> [[Tile; 20]; 12] {
         for j in 0..12 {
             ar[j][i].x = i as u16;
             ar[j][i].y = j as u16;
-            ar[j][i].id = tiles[j][i];
+            ar[j][i].id = 52; //tiles[j][i];
         }
     }
     println!("inside {}", ar[0][0].id);
     ar
 }
 impl TileBlock {
-    pub async fn new(x: u32, y: u32, texture: &str, tiles: [[u8; 20]; 12]) -> TileBlock {
+    pub fn new(x: u32, y: u32, template: TileTemplate, tiles: [[u8; 20]; 12]) -> TileBlock {
         //let ar = [[Tile { id: 10, x: 0, y: 0 }; 16]; 16];
-        let out = [texture, ".png"].join("");
-        let nout = [texture, "_n.png"].join("");
-        let textur: &str = &*out;
-        let normal: &str = &*nout; //explicit reborrowing, just to covnert our dynamic String to a static str, wow!
-                                   //s.push_str("_n");
         TileBlock {
             x,
             y,
             array: int_to_tile(tiles),
-            texture: load_texture(textur).await.unwrap(),
-            normals: load_texture(normal).await.unwrap(),
+            template,
         }
     }
     pub fn set(&mut self, id: u8, x: u16, y: u16) {
         // let t = Tile { id, x, y };
         self.array[y as usize][x as usize].id = id;
     }
-    pub fn draw_normals(&mut self) {
-        for i in 0..self.array[0].len() {
-            for j in 0..self.array.len() {
-                //self.array[i][j]
-                //draw_texture_ex()
-                let id = self.array[j][i].id;
-                let x = (id % 11) as f32;
-                let y = (id / 11) as f32;
-                draw_texture_ex(
-                    self.normals,
-                    (i * 16) as f32,
-                    384. + (j * 16) as f32,
-                    WHITE,
-                    DrawTextureParams {
-                        source: Some(Rect::new(x * 16., y * 16., 16., 16.)),
-                        //flip_x: dir,
-                        ..Default::default()
-                    },
-                );
-            }
-        }
+    pub fn pos(&mut self, x: u32, y: u32) {
+        self.x = x;
+        self.y = y;
     }
-    pub fn draw(&mut self) {
+    pub fn pos_add(&mut self, x: u32, y: u32) {
+        self.x += x;
+        self.y += y;
+    }
+    pub fn draw_normals(&self, layer: &Layer) {
+        self._draw(layer, self.template.normals);
+    }
+    pub fn draw(&self, layer: &Layer) {
+        self._draw(layer, self.template.texture);
+    }
+    fn _draw(&self, layer: &Layer, texture: Texture2D) {
+        let ox = layer.get_x() + self.x as f32;
+        let oy = layer.get_y() + self.y as f32;
         for i in 0..self.array[0].len() {
             for j in 0..self.array.len() {
                 //self.array[i][j]
@@ -86,9 +90,9 @@ impl TileBlock {
                 let x = (id % 11) as f32;
                 let y = (id / 11) as f32;
                 draw_texture_ex(
-                    self.texture,
-                    (i * 16) as f32,
-                    384. + (j * 16) as f32,
+                    texture,
+                    (i * 16) as f32 + ox,
+                    384. + (j * 16) as f32 + oy,
                     WHITE,
                     DrawTextureParams {
                         source: Some(Rect::new(x * 16., y * 16., 16., 16.)),

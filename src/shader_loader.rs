@@ -1,4 +1,8 @@
-pub const SCREEN_FRAGMENT_SHADER: &'static str = r#"#version 100
+// use std::fs;
+
+// pub static SCREEN_FRAGMENT_SHADER: &'static String = &fs::read_to_string("shader.frag").expect("uh oh bad glsl file");
+// pub static SCREEN_VERTEX_SHADER: &'static String =  &fs::read_to_string("shader.vert").expect("uh oh bad glsl file");
+/*pub const SCREEN_FRAGMENT_SHADER: &'static str = r#"#version 100
 precision lowp float;
 varying vec2 uv;
 varying vec2 uv_screen;
@@ -32,23 +36,8 @@ void main() {
             float c=normalize(vec2(n.x*v.x,n.y*v.x)).x;
             //t = glm::normalize(t - n * glm::dot(n, t));
             //vec2 uv2 = normalize(ray-n*dot(n,ray));//(uv-0.5*uv_screen.xy)/uv_screen.y;
-            float f = dot(vec3(ray,1.),n);
-           // float f2 = dot(vec3((ray+vec2(.1,0),0)),n);
-            //float f3 = dot(vec3((ray-vec2(.1,0),0)),n);
+            float f = dot(vec3(ray,1.)-vec3(uv_screen.y,1.,uv_screen.x),n);
 
-
-            //f=floor(f*.1);////clamp(f*.6,.2,1.));
-/*
-            if(floor(mod((ints.x*resolution.x+ints.y*resolution.y),(1.-f)*3.))==0.){
-                f=1.;
-            } else{
-                f=0.;
-            }*/
-/*
-            if(f>0.){
-                f=1.;
-            }
-            */
         
             if(uv_screen.x>.5){
                 
@@ -94,8 +83,8 @@ void main() {
                 //(floor(r*16.)+floor(b*16.)*16.)/128. +
                 //(g+16.)/32.
                 vec4 c2=texture2D(remap,vec2((floor(alb.r*16.)/256.+floor(alb.b*16.)/16.),.5+alb.g/2.));  //(alb.x/16.+alb.z)/16.
-                vec4 c=texture2D(remap, vec2(255./256., mod(uv_screen.y*16.,1.))); //vec2((alb.x)/256.+(alb.z)/16.
-                gl_FragColor = mix(c2,alb,0.);
+                vec4 c=texture2D(remap, vec2(uv_screen.x,uv_screen.y)); //vec2((alb.x)/256.+(alb.z)/16.
+                gl_FragColor = mix(c2,alb,f);
             }
             //gl_FragColor = vec4(col);//vec4(1,0,0,1);//mix(col*.6,col,f);//vec4(f,0.,0.,f);
         }else{
@@ -111,7 +100,8 @@ void main() {
 }
 "#;
 
-pub const SCREEN_VERTEX_SHADER: &'static str = "#version 100
+
+"#version 100
 attribute vec3 position;
 attribute vec2 texcoord;
 varying lowp vec2 center;
@@ -130,4 +120,4 @@ void main() {
     uv = texcoord;
     gl_Position = res;
 }
-";
+";*/

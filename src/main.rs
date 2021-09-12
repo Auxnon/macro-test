@@ -1,20 +1,24 @@
 use macroquad::prelude::*;
 
 mod controls;
+mod entity;
 mod global;
 mod image_helper;
+mod layer;
 mod menu;
-mod shader;
+mod shader_loader;
 mod tile;
 
+use entity::Ent;
 use global::Global;
+use layer::Layer;
 use std::collections::HashMap;
 use tile::TileBlock;
 
 #[macroquad::main("Kiwi")]
 async fn main() {
     let ar: [[u8; 20]; 12] = [
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
+        [8, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -28,10 +32,13 @@ async fn main() {
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
     ];
 
+    /*****
+     * Test One
+     */
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
-    let cc = color_img.get_image_data()[((0) as usize)]; //value
+    let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
-        Image::gen_image_color(256, 32, Color::from_rgba(cc[0], cc[1], cc[2], cc[3]));
+        Image::gen_image_color(256, 32, Color::from_rgba(cc[0], cc[1], cc[2], 255));
     //let mut COLOR: HashMap<String, [[u8; 4]; 2]> = HashMap::new();
     //let array2: [[[u8; 255]; 255]; 255]; // = [[[0; 255]; 255]; 255];
     for i in 0..32 {
@@ -67,6 +74,7 @@ async fn main() {
     }
 
     let color_lookup = Texture2D::from_image(&lookup_image);
+    color_lookup.set_filter(FilterMode::Nearest);
     //println!("val {}", array[255 & 255 & 255][1][0]);
     /*match COLOR.get("255255255") {
         Some(&out) => {
@@ -76,9 +84,34 @@ async fn main() {
             println!("dunno???");
         }
     };*/
-    //
+
+    /***
+     * END Test One
+     */
+
     let mut globals: Global = Default::default();
-    let mut tiles: TileBlock = TileBlock::new(0, 0, "assets/tiles", ar).await;
+    let tile_template: tile::TileTemplate = tile::create_template("assets/tiles").await;
+    let mut tiles: TileBlock = TileBlock::new(0, 0, tile_template, ar);
+    /***
+     * Test Two
+     */
+
+    let mut layer: Layer = Layer::new(1., 0., 0.);
+    tiles.pos_add(20, 0);
+    layer.add_tile(tiles);
+
+    /***
+     * END Test Two
+     */
+
+    /*
+    Test Three
+    */
+    //draw_mesh(mesh: &Mesh)
+
+    /***
+     *  End test Three
+     */
 
     let iwidth = (screen_width() as u16) / 4;
     let iheight = (screen_height() as u16) / 4;
@@ -105,10 +138,9 @@ async fn main() {
     birb.set_filter(FilterMode::Nearest);
     let chess: Texture2D = load_texture("assets/chess.png").await.unwrap();
     chess.set_filter(FilterMode::Nearest);
-
     let screen_material = load_material(
-        shader::SCREEN_VERTEX_SHADER,
-        shader::SCREEN_FRAGMENT_SHADER,
+        &std::fs::read_to_string("src/shader.vert").expect("uh oh bad glsl file"),
+        &std::fs::read_to_string("src/shader.frag").expect("uh oh bad glsl file"),
         MaterialParams {
             uniforms: vec![
                 ("Center".to_owned(), UniformType::Float2),
@@ -168,13 +200,14 @@ async fn main() {
         }*/
 
         let delta = (
-            (lens_center.0 / screen_width()) - 0.5,
-            (lens_center.1 / screen_height()) - 0.5,
+            (lens_center.0 / screen_width()),
+            (lens_center.1 / screen_height()),
         );
         let r = (delta.0 * delta.0 + delta.1 * delta.1).sqrt();
 
         screen_material.set_uniform("Center", lens_center);
-        screen_material.set_uniform("ray", (delta.0 / r, delta.1 / r));
+        screen_material.set_uniform("ray", (2. * (delta.0 - 0.5), 2. * (delta.1 - 0.5)));
+        //println!("ray {} {}", 2. * (delta.0 - 0.5), 2. * (delta.1 - 0.5));
         screen_material.set_uniform("resolution", (320. as f32, pixHeight as f32));
         screen_material.set_uniform("ratio", ir);
         screen_material.set_uniform("time", time);
@@ -182,10 +215,19 @@ async fn main() {
         if time >= 1. {
             time = 0.;
         }
-        /* ========
-        * normals
-        =========*/
-        tiles.draw_normals();
+        /* ======== Larry 3D
+
+         _   _                            _
+        | \ | |                          | |
+        |  \| | ___  _ __ _ __ ___   __ _| |___
+        | . ` |/ _ \| '__| '_ ` _ \ / _` | / __|
+        | |\  | (_) | |  | | | | | | (_| | \__ \
+        |_| \_|\___/|_|  |_| |_| |_|\__,_|_|___/
+                =========*/
+        //tiles.pos_add(1, 0);
+        //layer.pos_add(0., 1.);
+        layer.get_tile(0).pos_add(1, 0);
+        layer.draw_normals();
         for i in 0..array.len() {
             let dir = array[i].2;
             array[i].0 += if dir { 0.1 } else { -0.1 };
@@ -216,7 +258,7 @@ async fn main() {
                 },
             );
         }
-        set_default_camera();
+        //set_default_camera();
 
         texture.update(&image);
 
@@ -224,15 +266,32 @@ async fn main() {
         screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
         screen_material.set_texture("remap", color_lookup); //send this screen capture to our shader
         clear_background(WHITE);
+
         //draw_texture(textureFirst, 64.,64.,WHITE);
         //get_active_render_pass();
         //texture()
         //draw_mode()
 
         /* ========
-        * regular
-        =========*/
-        tiles.draw();
+                  _ _              _
+            /\   | | |            | |
+           /  \  | | |__   ___  __| | ___
+          / /\ \ | | '_ \ / _ \/ _` |/ _ \
+         / ____ \| | |_) |  __/ (_| | (_) |
+        /_/    \_\_|_.__/ \___|\__,_|\___/
+
+                =========*/
+
+        if true {
+            set_camera(&Camera3D {
+                //position: vec3(0.001, 1., 0.),
+                position: vec3(1., 10., 0.),
+                up: vec3(0., 1., 0.),
+                target: vec3(0., 0., 0.),
+                ..Default::default()
+            });
+        }
+        layer.draw();
         for i in 0..array.len() {
             //let dir=array[i].2;
             draw_texture_ex(
@@ -249,9 +308,42 @@ async fn main() {
             );
         }
 
+        draw_cube(
+            Vec3::new(time * 10., 0., 0.),
+            Vec3::new(10., 10., 10.),
+            render_pass_first,
+            WHITE,
+        );
+
+        /*draw_cube(
+            Vec3::new(100., 200., time * 200. - 100.),
+            Vec3::new(200., 200., 256.),
+            birb_n,
+            PURPLE,
+        );*/
+        //draw_rectangle(100., time * 200., 200., 200., RED);
+
+        //wrap up pass
         render_pass_second.update(&get_screen_data());
         screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
+        clear_background(WHITE);
+        //done
 
+        /*
+         _    _                     _
+        | |  | |                   | |
+        | |  | |_ __  ___  ___ __ _| | ___
+        | |  | | '_ \/ __|/ __/ _` | |/ _ \
+        | |__| | |_) \__ \ (_| (_| | |  __/
+         \____/| .__/|___/\___\__,_|_|\___|
+               | |
+               |_|
+
+                */
+        set_default_camera();
+        gl_use_material(screen_material);
+        draw_rectangle(0., 0., screen_width(), screen_height(), RED);
+        //plain texture render?
         /* draw_texture_ex(
             render_pass_second,
             0.,
@@ -264,17 +356,28 @@ async fn main() {
                 ..Default::default()
             },
         );*/
-        clear_background(WHITE);
-        gl_use_material(screen_material);
-        draw_rectangle(0., 0., screen_width(), screen_height(), RED);
         //draw_circle(screen_width()/2., screen_height()/2., 350.0, RED);
         gl_use_default_material();
+        let p = ((time) - 0.5) * 2000.;
+        if false {
+            set_camera(&Camera3D {
+                //position: vec3(0.001, 1., 0.),
+                position: vec3(2000., 2000., 0.),
+                up: vec3(0., 1., 0.),
+                target: vec3(0., 0., 0.),
+                ..Default::default()
+            });
+        }
+        //draw_rectangle(0., 0., screen_width(), screen_height(), GREEN);
+
+        //draw_cube(Vec3::new(0., 0., 0.), Vec3::new(1., 1., 1.), birb_n, WHITE);
 
         if is_key_pressed(KeyCode::Escape) {
             break;
         }
         if is_key_pressed(KeyCode::Space) {
-            iter += 32;
+            layer.remove_tile(0);
+            layer.add_tile(TileBlock::new(20, 20, tile_template, ar));
             if iter > 192 {
                 iter = 0;
             }
@@ -304,7 +407,7 @@ async fn main() {
             println!("half {} v {}", half_offset, v);
             if v > half_offset && v < (screen_height() - half_offset) {
                 let yy = (v - half_offset) as u16 / 16;
-                tiles.set(10, xx, yy);
+                layer.get_tile(0).set(10, xx, yy);
                 println!("x {} y {}", xx, yy);
             } else {
                 println!("nope x {} v {}", xx, v);
