@@ -9,7 +9,7 @@ mod menu;
 mod shader_loader;
 mod tile;
 
-use entity::Ent;
+use entity::{Ent, EntFactory};
 use global::Global;
 use layer::Layer;
 use std::collections::HashMap;
@@ -31,7 +31,9 @@ async fn main() {
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
     ];
-    entity::load_ents();
+    let mut ent_factory = EntFactory::new();
+
+    let mut cloud = ent_factory.create_ent(String::from("cloud"));
 
     /*****
      * Test One
@@ -100,6 +102,15 @@ async fn main() {
     let mut layer: Layer = Layer::new(1., 0., 0.);
     tiles.pos_add(20, 0);
     layer.add_tile(tiles);
+    cloud.set_x(5.);
+    println!(
+        "cloud is at {} and name is {} and anim is {}",
+        cloud.get_x(),
+        cloud.get_name(),
+        cloud.get_schema().get_anim(String::from("Idle"))
+    );
+
+    layer.add_ent(cloud);
 
     /***
      * END Test Two

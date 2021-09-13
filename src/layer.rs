@@ -1,21 +1,21 @@
 use crate::Ent;
 use crate::TileBlock;
 
-pub struct Layer {
+pub struct Layer<'a> {
     x: f32,
     y: f32,
     scale: f32,
     tiles: Vec<TileBlock>,
-    ents: Vec<Ent>,
+    ents: Vec<Ent<'a>>,
 }
 
-impl Layer {
+impl<'a> Layer<'a> {
     /*pub fn new(scale: f32) -> Layer {
         //let ar = [[Tile { id: 10, x: 0, y: 0 }; 16]; 16];
 
         Layer::new(scale, 0, 0)
     }*/
-    pub fn new(scale: f32, x: f32, y: f32) -> Layer {
+    pub fn new(scale: f32, x: f32, y: f32) -> Layer<'a> {
         //let ar = [[Tile { id: 10, x: 0, y: 0 }; 16]; 16];
         Layer {
             x,
@@ -31,7 +31,7 @@ impl Layer {
     pub fn remove_tile(&mut self, index: usize) {
         self.tiles.remove(index);
     }
-    pub fn add_ent(&mut self, ent: Ent) {
+    pub fn add_ent(&mut self, ent: Ent<'a>) {
         self.ents.push(ent);
     }
     pub fn draw(&mut self) {

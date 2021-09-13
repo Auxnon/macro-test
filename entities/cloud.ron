@@ -1,8 +1,6 @@
 (
     name: "cloud",
     sprite: "cloud-test",
-    anims: {
-        "idle":0,
-    },
+    anims: {"Idle":69},
     logic: "slow-right-bg-particle"
 )
