@@ -31,9 +31,7 @@ async fn main() {
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
     ];
-    let mut ent_factory = EntFactory::new();
-
-    let mut cloud = ent_factory.create_ent(String::from("cloud"));
+    let ent_factory = EntFactory::new().await;
 
     /*****
      * Test One
@@ -102,15 +100,15 @@ async fn main() {
     let mut layer: Layer = Layer::new(1., 0., 0.);
     tiles.pos_add(20, 0);
     layer.add_tile(tiles);
-    cloud.set_x(5.);
-    println!(
-        "cloud is at {} and name is {} and anim is {}",
+    /*println!(
+        "cloud is at {} and name is {}",
         cloud.get_x(),
         cloud.get_name(),
-        cloud.get_schema().get_anim(String::from("Idle"))
-    );
+        //cloud.get_schema().get_anim(String::from("Idle"))
+    );*/
 
-    layer.add_ent(cloud);
+    //layer.add_ent(ent_factory.create_ent("cloud"));
+    layer.add_ent(ent_factory.create_ent("birb-npc"));
 
     /***
      * END Test Two
@@ -128,8 +126,8 @@ async fn main() {
     let iwidth = (screen_width() as u16) / 4;
     let iheight = (screen_height() as u16) / 4;
 
-    let birb: Texture2D = load_texture("assets/birbo.png").await.unwrap();
-    let birb_n_img: Image = load_image("assets/birbo_n.png").await.unwrap();
+    let birb: Texture2D = load_texture("assets/birb.png").await.unwrap();
+    let birb_n_img: Image = load_image("assets/birb_n.png").await.unwrap();
     let birb_n: Texture2D = Texture2D::from_image(&birb_n_img); //load_texture("assets/birbo_n.png").await.unwrap();
     let immm = image_helper::flip(&birb_n_img, 0);
     println!("returned ${}", immm.get_image_data()[((13) as usize)][2]);
@@ -172,8 +170,6 @@ async fn main() {
     )
     .unwrap();
 
-    let mut anim: u8 = 0;
-    let max = (birb.width() / birb.height()) as u8;
     let mut tick: u8 = 0;
     let mut array: Vec<(f32, f32, bool)> = Vec::new();
     let mut array_is_dirty: bool = false;
@@ -189,14 +185,14 @@ async fn main() {
         let ir = screen_width() / 320.;
         let pixHeight = screen_height() / ir;
 
-        tick += 1;
+        /*tick += 1;
         if tick >= 6 {
             tick = 0;
             anim += 1;
             if anim >= max {
                 anim = 0;
             }
-        }
+        }*/
 
         let lens_center = mouse_position();
 
@@ -240,36 +236,7 @@ async fn main() {
         //layer.pos_add(0., 1.);
         layer.get_tile(0).pos_add(1, 0);
         layer.draw_normals();
-        for i in 0..array.len() {
-            let dir = array[i].2;
-            array[i].0 += if dir { 0.1 } else { -0.1 };
-            let x = array[i].0;
-            let y = array[i].1;
 
-            if x > 320. {
-                //x-=2.;
-                array[i].2 = !dir;
-            } else if x < 0. {
-                //x+=2.;
-                //
-                //i-=1;
-                //array[i].0=-99.; //we'll mark it dead on the x position like as a weird work around
-                //array_is_dirty=true;
-
-                array[i].2 = !dir;
-            }
-            draw_texture_ex(
-                birb_n, //if dir {birb_n} else {birb_nf},
-                x - 16.,
-                y - 16. + 384.,
-                WHITE,
-                DrawTextureParams {
-                    source: Some(Rect::new((anim as f32) * 32., 0., 32., 32.)),
-                    flip_x: dir,
-                    ..Default::default()
-                },
-            );
-        }
         //set_default_camera();
 
         texture.update(&image);
@@ -294,7 +261,7 @@ async fn main() {
 
                 =========*/
 
-        if true {
+        /*if true {
             set_camera(&Camera3D {
                 //position: vec3(0.001, 1., 0.),
                 position: vec3(1., 10., 0.),
@@ -302,9 +269,10 @@ async fn main() {
                 target: vec3(0., 0., 0.),
                 ..Default::default()
             });
-        }
+        }*/
+
         layer.draw();
-        for i in 0..array.len() {
+        /*for i in 0..array.len() {
             //let dir=array[i].2;
             draw_texture_ex(
                 birb,
@@ -318,7 +286,7 @@ async fn main() {
                     ..Default::default()
                 },
             );
-        }
+        }*/
 
         draw_cube(
             Vec3::new(time * 10., 0., 0.),

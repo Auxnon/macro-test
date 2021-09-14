@@ -38,10 +38,16 @@ impl<'a> Layer<'a> {
         for t in self.tiles.iter().clone() {
             t.draw(self);
         }
+        for e in self.ents.iter_mut() {
+            e.draw(false);
+        }
     }
     pub fn draw_normals(&mut self) {
         for t in self.tiles.iter() {
             t.draw_normals(self);
+        }
+        for e in self.ents.iter_mut() {
+            e.draw(true);
         }
     }
     pub fn get_x(&self) -> f32 {

@@ -91,7 +91,7 @@ void main() {
     }else{ 
         gl_FragColor = vec4(alb);
     }
-    gl_FragColor.r=0.;
+    //gl_FragColor.r=0.;
     //gl_FragColor = vec4(1.,0.,0.,1.);
     /*if(norms.b==0.){
         gl_FragColor=vec4(1,0,0,1);
