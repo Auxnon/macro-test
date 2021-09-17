@@ -1,5 +1,7 @@
-use macroquad::prelude::*;
+use gltf::Gltf;
 
+use gltf_importer::import;
+use macroquad::prelude::*;
 mod controls;
 mod entity;
 mod global;
@@ -76,15 +78,6 @@ async fn main() {
 
     let color_lookup = Texture2D::from_image(&lookup_image);
     color_lookup.set_filter(FilterMode::Nearest);
-    //println!("val {}", array[255 & 255 & 255][1][0]);
-    /*match COLOR.get("255255255") {
-        Some(&out) => {
-            println!("hi {}", out[1][2]);
-        }
-        _ => {
-            println!("dunno???");
-        }
-    };*/
 
     /***
      * END Test One
@@ -100,14 +93,6 @@ async fn main() {
     let mut layer: Layer = Layer::new(1., 0., 0.);
     tiles.pos_add(20, 0);
     layer.add_tile(tiles);
-    /*println!(
-        "cloud is at {} and name is {}",
-        cloud.get_x(),
-        cloud.get_name(),
-        //cloud.get_schema().get_anim(String::from("Idle"))
-    );*/
-
-    //layer.add_ent(ent_factory.create_ent("cloud"));
     layer.add_ent(ent_factory.create_ent("birb-npc"));
 
     /***
@@ -117,6 +102,63 @@ async fn main() {
     /*
     Test Three
     */
+    //Gltf::from_reader(reader: R)
+    let (gltf, buffers) = import("assets/console.gltf").unwrap();
+    let mut take = gltf.accessors();
+    let vec = buffers.take();
+    /*for row in vec {
+        println!("========");
+        println!("========");
+        print!("v");
+        for i in row {
+            print!("{},", i);
+        }
+    }*/
+
+    //let json=gltf.document.into_json();
+    //json.meshes[0].primitives[0].indices
+    //gltf.document.buffers().for_each(f: F)
+    let mat = take.next();
+    match mat {
+        Some(o) => {
+            println!("mesh {:?}", o)
+        }
+        None => {
+            println!("mesh naw");
+        }
+    };
+    let mat2 = take.next();
+    match mat2 {
+        Some(o) => {
+            println!("mesh2 {:?}", o)
+        }
+        None => {
+            println!("mesh2 naw");
+        }
+    };
+    for mesh in gltf.meshes() {
+        //draw_mesh();
+        //let m=Mesh{}
+        for primitive in mesh.primitives() {
+            /*
+            println!("- Primitive #{}", primitive.index());
+            println!(
+                "bounds {} {}",
+                primitive.bounding_box().max[0],
+                primitive.bounding_box().min[0]
+            );
+            for (semantic, _) in primitive.attributes() {
+                print!("-- {:?}", semantic);
+                //let reader = primitive.reader()
+                let accessor = primitive.get(&semantic).unwrap();
+                //gltf_utils::Positions::new(accessor, primitive);
+                //accessor.offset()
+                println!("-- {}", accessor.count());
+            }*/
+        }
+        //mesh.as_json().primitives
+    }
+    //draw_mesh(mesh: &Mesh);
     //draw_mesh(mesh: &Mesh)
 
     /***
