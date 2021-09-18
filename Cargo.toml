@@ -12,5 +12,5 @@ macroquad = "0.3.6"
 rand = "0.8.4"
 ron = "0.6.5"
 serde =""
-gltf =""
-gltf-importer ="0.9.3"
+gltf ="0.16.0"
+

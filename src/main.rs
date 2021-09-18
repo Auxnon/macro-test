@@ -1,6 +1,14 @@
-use gltf::Gltf;
+use gltf::buffer::Data as BufferData;
 
-use gltf_importer::import;
+use gltf::image::{Data as ImageData, Source};
+use gltf::json::extensions::mesh::*;
+use gltf::json::extensions::scene::*;
+use gltf::mesh::util::*;
+use gltf::mesh::*;
+use gltf::scene::Node;
+use gltf::{Document, Gltf, Mesh, Primitive, Scene};
+
+//use gltf_importer::import;
 use macroquad::prelude::*;
 mod controls;
 mod entity;
@@ -102,10 +110,10 @@ async fn main() {
     /*
     Test Three
     */
-    //Gltf::from_reader(reader: R)
-    let (gltf, buffers) = import("assets/console.gltf").unwrap();
-    let mut take = gltf.accessors();
-    let vec = buffers.take();
+    let (nodes, buffers, image_data) = gltf::import("assets/console.gltf").unwrap();
+    //let (gltf, buffers) = import().unwrap();
+    //let mut take = gltf.accessors();
+    //let buffer_data = buffers.take();
     /*for row in vec {
         println!("========");
         println!("========");
@@ -118,7 +126,7 @@ async fn main() {
     //let json=gltf.document.into_json();
     //json.meshes[0].primitives[0].indices
     //gltf.document.buffers().for_each(f: F)
-    let mat = take.next();
+    /*let mat = take.next();
     match mat {
         Some(o) => {
             println!("mesh {:?}", o)
@@ -135,11 +143,83 @@ async fn main() {
         None => {
             println!("mesh2 naw");
         }
-    };
-    for mesh in gltf.meshes() {
+    };*/
+    for mesh in nodes.meshes() {
         //draw_mesh();
         //let m=Mesh{}
+
         for primitive in mesh.primitives() {
+            let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+
+            let faces: Vec<u16> = match reader.read_indices().unwrap() {
+                ReadIndices::U8(itr) => itr.map(|i| i as u16).collect(),
+                ReadIndices::U16(itr) => itr.collect(),
+                ReadIndices::U32(itr) => itr.map(|i| i as u16).collect(),
+            };
+            for f in faces {
+                println!("- face #{:?}", f);
+            }
+
+            let verts_interleaved = izip!(
+                reader.read_positions().unwrap(),
+                reader.read_normals().unwrap(),
+                //reader.read_colors(0).unwrap().into_rgb_f32().into_iter(),
+                reader.read_tex_coords(0).unwrap().into_f32(),
+            );
+            pub struct Vertex {
+                pos: [f32; 3],
+                uv: [f32; 2],
+                color: [u8; 4],
+            }
+
+            /*let verts = verts_interleaved
+            .map(|(pos, norm, uv)| Vertex {
+                x: match pos.get(0) {
+                    Some(p) => *p,
+                    _ => 0.0,
+                },
+                y: match pos.get(1) {
+                    Some(p) => *p,
+                    _ => 0.0,
+                },
+                z: match pos.get(2) {
+                    Some(p) => *p,
+                    _ => 0.0,
+                },
+                nx: match norm.get(0) {
+                    Some(n) => *n,
+                    _ => 0.0,
+                },
+                ny: match norm.get(1) {
+                    Some(n) => *n,
+                    _ => 0.0,
+                },
+                nz: match norm.get(2) {
+                    Some(n) => *n,
+                    _ => 0.0,
+                },
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+                u: match uv.get(0) {
+                    Some(u) => match u {
+                        //u if *u > 1.0 => u.fract(),
+                        //u if *u < 0.0 => u.fract() + 1.0,
+                        _ => *u,
+                    },
+                    _ => 0.0,
+                },
+                v: match uv.get(1) {
+                    Some(v) => match v {
+                        //v if *v > 1.0 => v.fract(),
+                        //v if *v < 0.0 => v.fract() + 1.0,
+                        _ => *v,
+                    },
+                    _ => 0.0,
+                },
+            })
+            .collect::<Vec<Vertex>>();*/
             /*
             println!("- Primitive #{}", primitive.index());
             println!(
