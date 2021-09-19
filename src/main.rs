@@ -7,6 +7,7 @@ use gltf::mesh::util::*;
 use gltf::mesh::*;
 use gltf::scene::Node;
 use gltf::{Document, Gltf, Mesh, Primitive, Scene};
+use itertools::{izip, Itertools};
 
 //use gltf_importer::import;
 use macroquad::prelude::*;
@@ -42,7 +43,7 @@ async fn main() {
         [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
     ];
     let ent_factory = EntFactory::new().await;
-
+    let test_texture = load_texture("assets/birb.png").await.unwrap();
     /*****
      * Test One
      */
@@ -144,6 +145,7 @@ async fn main() {
             println!("mesh2 naw");
         }
     };*/
+    let mut meshes: Vec<macroquad::models::Mesh> = vec![];
     for mesh in nodes.meshes() {
         //draw_mesh();
         //let m=Mesh{}
@@ -159,76 +161,57 @@ async fn main() {
             for f in faces {
                 println!("- face #{:?}", f);
             }
-            //let verts_interleaved = izip!(
-            let m = (
+            let verts_interleaved = izip!(
                 reader.read_positions().unwrap(),
-                reader.read_normals().unwrap(),
+                //reader.read_normals().unwrap(),
                 //reader.read_colors(0).unwrap().into_rgb_f32().into_iter(),
                 reader.read_tex_coords(0).unwrap().into_f32(),
+                //reader.read_indices().unwrap()
             );
 
-            if let (Some(verts), Some(uvs)) = (
+            /*if let (Some(verts), Some(uvs)) = (
                 reader.read_positions().map(|v| v),
-                reader.read_positions().map(|u| u),
+                reader.read_tex_coords(0).map(|u| u),
             ) {
-                //let p = Vertex{pos:verts,uv:uvs}
-            }
+            }*/
+            /*
+            pub struct Mesh {
+                pub vertices: Vec<Vertex>,
+                pub indices: Vec<u16>,
+                pub texture: Option<Texture2D>,
+            }*/
 
             //);
-            pub struct Vertex {
+            /* pub struct Vertex {
                 pos: [f32; 3],
                 uv: [f32; 2],
                 color: [u8; 4],
+            }*/
+            pub struct Vertex {
+                pub position: Vec3,
+                pub uv: Vec2,
+                pub color: Color,
             }
 
-            /*let verts = verts_interleaved
-            .map(|(pos, norm, uv)| Vertex {
-                x: match pos.get(0) {
-                    Some(p) => *p,
-                    _ => 0.0,
-                },
-                y: match pos.get(1) {
-                    Some(p) => *p,
-                    _ => 0.0,
-                },
-                z: match pos.get(2) {
-                    Some(p) => *p,
-                    _ => 0.0,
-                },
-                nx: match norm.get(0) {
-                    Some(n) => *n,
-                    _ => 0.0,
-                },
-                ny: match norm.get(1) {
-                    Some(n) => *n,
-                    _ => 0.0,
-                },
-                nz: match norm.get(2) {
-                    Some(n) => *n,
-                    _ => 0.0,
-                },
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-                u: match uv.get(0) {
-                    Some(u) => match u {
-                        //u if *u > 1.0 => u.fract(),
-                        //u if *u < 0.0 => u.fract() + 1.0,
-                        _ => *u,
-                    },
-                    _ => 0.0,
-                },
-                v: match uv.get(1) {
-                    Some(v) => match v {
-                        //v if *v > 1.0 => v.fract(),
-                        //v if *v < 0.0 => v.fract() + 1.0,
-                        _ => *v,
-                    },
-                    _ => 0.0,
-                },
-            })
-            .collect::<Vec<Vertex>>();*/
+            let vertices = verts_interleaved
+                .map(|(pos, uv)| macroquad::models::Vertex {
+                    position: Vec3::from(pos),
+                    uv: Vec2::from(uv),
+                    color: WHITE,
+                })
+                .collect::<Vec<macroquad::models::Vertex>>();
+
+            if let Some(inds) = reader.read_indices() {
+                let indices = inds.into_u32().map(|u| u as u16).collect::<Vec<u16>>();
+                let mesh = macroquad::models::Mesh {
+                    vertices,
+                    indices,
+                    texture: Some(test_texture),
+                };
+                meshes.push(mesh);
+            };
+
+            //let inds=reader.read_indices().map(|i| i.into_u32().collect());
             /*
             println!("- Primitive #{}", primitive.index());
             println!(
@@ -392,15 +375,15 @@ async fn main() {
 
                 =========*/
 
-        /*if true {
+        if true {
             set_camera(&Camera3D {
                 //position: vec3(0.001, 1., 0.),
-                position: vec3(1., 10., 0.),
+                position: vec3(1., time * 20., 0.),
                 up: vec3(0., 1., 0.),
                 target: vec3(0., 0., 0.),
                 ..Default::default()
             });
-        }*/
+        }
 
         layer.draw();
         /*for i in 0..array.len() {
@@ -420,11 +403,19 @@ async fn main() {
         }*/
 
         draw_cube(
-            Vec3::new(time * 10., 0., 0.),
-            Vec3::new(10., 10., 10.),
+            Vec3::new(0., 0., 0.),
+            Vec3::new(10., 2., 10.),
             render_pass_first,
             WHITE,
         );
+        match meshes.get(0) {
+            Some(o) => {
+                draw_mesh(o);
+            }
+            None => {
+                println!("naw")
+            }
+        }
 
         /*draw_cube(
             Vec3::new(100., 200., time * 200. - 100.),
