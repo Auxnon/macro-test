@@ -159,13 +159,22 @@ async fn main() {
             for f in faces {
                 println!("- face #{:?}", f);
             }
-
-            let verts_interleaved = izip!(
+            //let verts_interleaved = izip!(
+            let m = (
                 reader.read_positions().unwrap(),
                 reader.read_normals().unwrap(),
                 //reader.read_colors(0).unwrap().into_rgb_f32().into_iter(),
                 reader.read_tex_coords(0).unwrap().into_f32(),
             );
+
+            if let (Some(verts), Some(uvs)) = (
+                reader.read_positions().map(|v| v),
+                reader.read_positions().map(|u| u),
+            ) {
+                //let p = Vertex{pos:verts,uv:uvs}
+            }
+
+            //);
             pub struct Vertex {
                 pos: [f32; 3],
                 uv: [f32; 2],
