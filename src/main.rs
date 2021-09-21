@@ -24,24 +24,27 @@ use entity::{Ent, EntFactory};
 use global::Global;
 use layer::Layer;
 use std::collections::HashMap;
+use std::process::exit;
 use tile::TileBlock;
 
 #[macroquad::main("Kiwi")]
 async fn main() {
-    let ar: [[u8; 20]; 12] = [
-        [8, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
-    ];
+    let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
+
+    let level_template: Image = load_image("assets/level_template.png").await.unwrap();
+    for i in 0..20 {
+        for j in 0..12 {
+            let c = level_template.get_image_data()[((i + j * 20) as usize)]; //value
+            if c[0] == 0 && c[1] == 0 && c[2] == 0 {
+                //println!("black");
+                ar[j][i] = 2;
+            } else {
+                //println!("white");
+                ar[j][i] = 3;
+            }
+        }
+    }
+
     let ent_factory = EntFactory::new().await;
     let test_texture = load_texture("assets/birb.png").await.unwrap();
     /*****
@@ -93,14 +96,14 @@ async fn main() {
      */
 
     let mut globals: Global = Default::default();
-    let tile_template: tile::TileTemplate = tile::create_template("assets/tiles").await;
+    let tile_template: tile::TileTemplate = tile::create_template("assets/wood").await;
     let mut tiles: TileBlock = TileBlock::new(0, 0, tile_template, ar);
     /***
      * Test Two
      */
 
     let mut layer: Layer = Layer::new(1., 0., 0.);
-    tiles.pos_add(20, 0);
+    //tiles.pos_add(20, 0);
     layer.add_tile(tiles);
     layer.add_ent(ent_factory.create_ent("birb-npc"));
 
@@ -284,14 +287,16 @@ async fn main() {
     )
     .unwrap();
 
-    let mut tick: u8 = 0;
     let mut array: Vec<(f32, f32, bool)> = Vec::new();
     let mut array_is_dirty: bool = false;
     array.push((3., 128., true));
 
     let mut iter: u32 = 0;
 
-    let mut time: f32 = 0.;
+    let mut incr_time = 0.;
+
+    let mut last_step_time = 0.;
+    let mut last_real_time = 0.;
 
     loop {
         let mw = screen_width() / 2.;
@@ -299,44 +304,39 @@ async fn main() {
         let ir = screen_width() / 320.;
         let pixHeight = screen_height() / ir;
 
-        /*tick += 1;
-        if tick >= 6 {
-            tick = 0;
-            anim += 1;
-            if anim >= max {
-                anim = 0;
-            }
-        }*/
-
         let lens_center = mouse_position();
 
-        /*
-        clear_background(BLACK);
-        for i in 0..32 {
-            for j in 0..32 {
-                let n = 64; //(if lens_center.1 >iheight {iheight} else {lens_center.1}) as u16;
-                image.get_image_data_mut()
-                    [((i + n) * iwidth + j + lens_center.0 as u16) as usize] =
-                    birbImg.get_image_data()[(i * 32 + j) as usize];
-            }
-        }*/
-
-        let delta = (
+        let delta_point = (
             (lens_center.0 / screen_width()),
             (lens_center.1 / screen_height()),
         );
-        let r = (delta.0 * delta.0 + delta.1 * delta.1).sqrt();
+        let r = (delta_point.0 * delta_point.0 + delta_point.1 * delta_point.1).sqrt();
 
         screen_material.set_uniform("Center", lens_center);
-        screen_material.set_uniform("ray", (2. * (delta.0 - 0.5), 2. * (delta.1 - 0.5)));
-        //println!("ray {} {}", 2. * (delta.0 - 0.5), 2. * (delta.1 - 0.5));
+        screen_material.set_uniform(
+            "ray",
+            (2. * (delta_point.0 - 0.5), 2. * (delta_point.1 - 0.5)),
+        );
+        //println!("ray {} {}", 2. * (delta_point.0 - 0.5), 2. * (delta_point.1 - 0.5));
         screen_material.set_uniform("resolution", (320. as f32, pixHeight as f32));
         screen_material.set_uniform("ratio", ir);
-        screen_material.set_uniform("time", time);
-        time += 0.01;
-        if time >= 1. {
-            time = 0.;
+        screen_material.set_uniform("time", incr_time);
+
+        let real_time = get_time();
+
+        let tick = if real_time > last_step_time + 0.25 {
+            last_step_time = real_time;
+            true
+        } else {
+            false
+        };
+        incr_time += real_time / 1000.;
+        if incr_time > 1. {
+            incr_time -= 1.;
         }
+        let delta = real_time - last_real_time;
+        last_real_time = real_time;
+
         /* ======== Larry 3D
 
          _   _                            _
@@ -349,7 +349,7 @@ async fn main() {
         //tiles.pos_add(1, 0);
         //layer.pos_add(0., 1.);
         layer.get_tile(0).pos_add(1, 0);
-        layer.draw_normals();
+        layer.draw_normals(delta as f32, tick);
 
         //set_default_camera();
 
@@ -358,12 +358,10 @@ async fn main() {
         render_pass_first.update(&get_screen_data()); //dump our screen texture to our render_pass_first variable
         screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
         screen_material.set_texture("remap", color_lookup); //send this screen capture to our shader
-        clear_background(WHITE);
+        clear_background(BLACK);
 
         //draw_texture(textureFirst, 64.,64.,WHITE);
         //get_active_render_pass();
-        //texture()
-        //draw_mode()
 
         /* ========
                   _ _              _
@@ -375,17 +373,17 @@ async fn main() {
 
                 =========*/
 
-        if true {
+        if false {
             set_camera(&Camera3D {
                 //position: vec3(0.001, 1., 0.),
-                position: vec3(1., time * 20., 0.),
+                position: vec3(1., (incr_time * 20.) as f32, 0.),
                 up: vec3(0., 1., 0.),
                 target: vec3(0., 0., 0.),
                 ..Default::default()
             });
         }
 
-        layer.draw();
+        layer.draw(delta as f32, tick);
         /*for i in 0..array.len() {
             //let dir=array[i].2;
             draw_texture_ex(
@@ -417,14 +415,6 @@ async fn main() {
             }
         }
 
-        /*draw_cube(
-            Vec3::new(100., 200., time * 200. - 100.),
-            Vec3::new(200., 200., 256.),
-            birb_n,
-            PURPLE,
-        );*/
-        //draw_rectangle(100., time * 200., 200., 200., RED);
-
         //wrap up pass
         render_pass_second.update(&get_screen_data());
         screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
@@ -445,34 +435,8 @@ async fn main() {
         set_default_camera();
         gl_use_material(screen_material);
         draw_rectangle(0., 0., screen_width(), screen_height(), RED);
-        //plain texture render?
-        /* draw_texture_ex(
-            render_pass_second,
-            0.,
-            0.,
-            WHITE,
-            DrawTextureParams {
-                source: Some(Rect::new(0., 0., 320., 180.)),
-                dest_size: Some(vec2(screen_width(), screen_height())),
 
-                ..Default::default()
-            },
-        );*/
-        //draw_circle(screen_width()/2., screen_height()/2., 350.0, RED);
         gl_use_default_material();
-        let p = ((time) - 0.5) * 2000.;
-        if false {
-            set_camera(&Camera3D {
-                //position: vec3(0.001, 1., 0.),
-                position: vec3(2000., 2000., 0.),
-                up: vec3(0., 1., 0.),
-                target: vec3(0., 0., 0.),
-                ..Default::default()
-            });
-        }
-        //draw_rectangle(0., 0., screen_width(), screen_height(), GREEN);
-
-        //draw_cube(Vec3::new(0., 0., 0.), Vec3::new(1., 1., 1.), birb_n, WHITE);
 
         if is_key_pressed(KeyCode::Escape) {
             break;
@@ -523,6 +487,7 @@ async fn main() {
         next_frame().await
     }
     println!("complete");
+    exit(0);
 }
 
 fn drawAlbedo() {}

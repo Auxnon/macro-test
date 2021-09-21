@@ -1,6 +1,6 @@
 (
     name: "birb-npc",
     sprite: "birb",
-    anims: {"Idle":(0,21)},
+    anims: {"Idle":(0,12)},
     logic: "npc-wander"
 )

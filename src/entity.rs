@@ -65,10 +65,14 @@ impl<'b> Ent<'b> {
             self.anim_index = inds.0;
         }
     }
-    pub fn draw(&mut self, normal: bool) {
+    pub fn draw(&mut self, delta: f32, tick: bool, normal: bool) {
         //for i in 0..array.len() {
         //let dir = array[i].2;
-        self.x += if self.face_right { 0.1 } else { -0.1 };
+        self.x += if self.face_right {
+            2. * delta
+        } else {
+            -2. * delta
+        };
         let x = self.x;
         let y = self.y;
 
@@ -84,8 +88,11 @@ impl<'b> Ent<'b> {
 
             self.face_right = !self.face_right;
         }
-        self.anim(String::from("Idle"));
+        if !normal && tick {
+            self.anim(String::from("Idle"));
+        }
         // let max = (birb.width() / birb.height()) as u8;
+        println!("anim {}", delta);
         draw_texture_ex(
             if normal {
                 self.schema.normals

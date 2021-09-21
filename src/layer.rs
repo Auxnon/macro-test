@@ -34,20 +34,20 @@ impl<'a> Layer<'a> {
     pub fn add_ent(&mut self, ent: Ent<'a>) {
         self.ents.push(ent);
     }
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, delta: f32, tick: bool) {
         for t in self.tiles.iter().clone() {
             t.draw(self);
         }
         for e in self.ents.iter_mut() {
-            e.draw(false);
+            e.draw(delta, tick, false);
         }
     }
-    pub fn draw_normals(&mut self) {
+    pub fn draw_normals(&mut self, delta: f32, tick: bool) {
         for t in self.tiles.iter() {
             t.draw_normals(self);
         }
         for e in self.ents.iter_mut() {
-            e.draw(true);
+            e.draw(delta, tick, true);
         }
     }
     pub fn get_x(&self) -> f32 {
