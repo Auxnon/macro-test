@@ -100,7 +100,7 @@ impl TileBlock {
                 draw_texture_ex(
                     texture,
                     (i * 16) as f32 + ox,
-                    384. + (j * 16) as f32 + oy,
+                    (j * 16) as f32 + oy, //384. +
                     WHITE,
                     DrawTextureParams {
                         source: Some(Rect::new(x * 16., y * 16., 16., 16.)),

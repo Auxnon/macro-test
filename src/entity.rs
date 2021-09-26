@@ -100,7 +100,7 @@ impl<'b> Ent<'b> {
                 self.schema.albedo
             }, //if dir {birb_n} else {birb_nf},
             self.x - 16.,
-            self.y - 16. + 384.,
+            self.y - 16., //+ 384.,
             WHITE,
             DrawTextureParams {
                 source: Some(Rect::new((self.anim_index as f32) * 32., 0., 32., 32.)),
@@ -141,10 +141,12 @@ impl EntFactory {
             };
             let text = format!("assets/{}.png", schema.sprite);
             let ntext = format!("assets/{}_n.png", schema.sprite);
-            println!("loaded texture {}", text);
+            //println!("loaded texture {}", text);
             let albedo = load_texture(&text[..]).await.unwrap_or(Texture2D::empty());
-            println!(" texture width {}", albedo.width());
+            //println!(" texture width {}", albedo.width());
             let normals = load_texture(&ntext[..]).await.unwrap_or(Texture2D::empty());
+            normals.set_filter(FilterMode::Nearest);
+            albedo.set_filter(FilterMode::Nearest);
             let ent = EntSchema {
                 name: schema.name,
                 anims: schema.anims,

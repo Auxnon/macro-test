@@ -27,8 +27,20 @@ use std::collections::HashMap;
 use std::process::exit;
 use tile::TileBlock;
 
-#[macroquad::main("Kiwi")]
+fn conf() -> Conf {
+    Conf {
+        window_title: String::from("Kiwi"),
+        window_width: 1280,
+        window_height: 768,
+        fullscreen: false,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(conf())]
 async fn main() {
+    // 320 x 192
+
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
     let level_template: Image = load_image("assets/level_template.png").await.unwrap();
@@ -46,16 +58,13 @@ async fn main() {
     }
 
     let ent_factory = EntFactory::new().await;
-    let test_texture = load_texture("assets/birb.png").await.unwrap();
     /*****
-     * Test One
+     * Set palette bloom and shading values for our shader
      */
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
         Image::gen_image_color(256, 32, Color::from_rgba(cc[0], cc[1], cc[2], 255));
-    //let mut COLOR: HashMap<String, [[u8; 4]; 2]> = HashMap::new();
-    //let array2: [[[u8; 255]; 255]; 255]; // = [[[0; 255]; 255]; 255];
     for i in 0..32 {
         let c = color_img.get_image_data()[((i + 32) as usize)]; //value
         let l = color_img.get_image_data()[((i) as usize)]; //low
@@ -71,28 +80,13 @@ async fn main() {
             (y + 16) as u32,
             Color::from_rgba(h[0], h[1], h[2], h[3]),
         );
-        //let together = format!("{}{}{}", c[0], c[1], c[2]);
-        //println!("big {}", c[0] & c[1] & c[2]);
-        // array[(c[0] & c[1] & c[2]) as usize] = [
-        //     color_img.get_image_data()[((i) as usize)],
-        //     color_img.get_image_data()[((i + 64) as usize)],
-        // ];
-        /*COLOR.insert(
-            together,
-            [
-                color_img.get_image_data()[((i) as usize)],
-                color_img.get_image_data()[((i + 64) as usize)],
-            ],
-        );*/
-        //println!("{} rgb {} {} {} {}", i, c[0], c[1], c[2], c[3]);
-        //println!("ci ${} ${}", (x + z * 16) as f32 / 256., y as f32 / 32.);
     }
 
     let color_lookup = Texture2D::from_image(&lookup_image);
     color_lookup.set_filter(FilterMode::Nearest);
 
     /***
-     * END Test One
+     * END
      */
 
     let mut globals: Global = Default::default();
@@ -102,8 +96,8 @@ async fn main() {
      * Test Two
      */
 
-    let mut layer: Layer = Layer::new(1., 0., 0.);
-    //tiles.pos_add(20, 0);
+    let mut layer: Layer = Layer::new(1., 0., 576.); //573
+                                                     //tiles.pos_add(20, 0);
     layer.add_tile(tiles);
     layer.add_ent(ent_factory.create_ent("birb-npc"));
 
@@ -111,160 +105,16 @@ async fn main() {
      * END Test Two
      */
 
-    /*
-    Test Three
-    */
-    let (nodes, buffers, image_data) = gltf::import("assets/console.gltf").unwrap();
-    //let (gltf, buffers) = import().unwrap();
-    //let mut take = gltf.accessors();
-    //let buffer_data = buffers.take();
-    /*for row in vec {
-        println!("========");
-        println!("========");
-        print!("v");
-        for i in row {
-            print!("{},", i);
-        }
-    }*/
-
-    //let json=gltf.document.into_json();
-    //json.meshes[0].primitives[0].indices
-    //gltf.document.buffers().for_each(f: F)
-    /*let mat = take.next();
-    match mat {
-        Some(o) => {
-            println!("mesh {:?}", o)
-        }
-        None => {
-            println!("mesh naw");
-        }
-    };
-    let mat2 = take.next();
-    match mat2 {
-        Some(o) => {
-            println!("mesh2 {:?}", o)
-        }
-        None => {
-            println!("mesh2 naw");
-        }
-    };*/
-    let mut meshes: Vec<macroquad::models::Mesh> = vec![];
-    for mesh in nodes.meshes() {
-        //draw_mesh();
-        //let m=Mesh{}
-
-        for primitive in mesh.primitives() {
-            let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
-
-            let faces: Vec<u16> = match reader.read_indices().unwrap() {
-                ReadIndices::U8(itr) => itr.map(|i| i as u16).collect(),
-                ReadIndices::U16(itr) => itr.collect(),
-                ReadIndices::U32(itr) => itr.map(|i| i as u16).collect(),
-            };
-            for f in faces {
-                println!("- face #{:?}", f);
-            }
-            let verts_interleaved = izip!(
-                reader.read_positions().unwrap(),
-                //reader.read_normals().unwrap(),
-                //reader.read_colors(0).unwrap().into_rgb_f32().into_iter(),
-                reader.read_tex_coords(0).unwrap().into_f32(),
-                //reader.read_indices().unwrap()
-            );
-
-            /*if let (Some(verts), Some(uvs)) = (
-                reader.read_positions().map(|v| v),
-                reader.read_tex_coords(0).map(|u| u),
-            ) {
-            }*/
-            /*
-            pub struct Mesh {
-                pub vertices: Vec<Vertex>,
-                pub indices: Vec<u16>,
-                pub texture: Option<Texture2D>,
-            }*/
-
-            //);
-            /* pub struct Vertex {
-                pos: [f32; 3],
-                uv: [f32; 2],
-                color: [u8; 4],
-            }*/
-            pub struct Vertex {
-                pub position: Vec3,
-                pub uv: Vec2,
-                pub color: Color,
-            }
-
-            let vertices = verts_interleaved
-                .map(|(pos, uv)| macroquad::models::Vertex {
-                    position: Vec3::from(pos),
-                    uv: Vec2::from(uv),
-                    color: WHITE,
-                })
-                .collect::<Vec<macroquad::models::Vertex>>();
-
-            if let Some(inds) = reader.read_indices() {
-                let indices = inds.into_u32().map(|u| u as u16).collect::<Vec<u16>>();
-                let mesh = macroquad::models::Mesh {
-                    vertices,
-                    indices,
-                    texture: Some(test_texture),
-                };
-                meshes.push(mesh);
-            };
-
-            //let inds=reader.read_indices().map(|i| i.into_u32().collect());
-            /*
-            println!("- Primitive #{}", primitive.index());
-            println!(
-                "bounds {} {}",
-                primitive.bounding_box().max[0],
-                primitive.bounding_box().min[0]
-            );
-            for (semantic, _) in primitive.attributes() {
-                print!("-- {:?}", semantic);
-                //let reader = primitive.reader()
-                let accessor = primitive.get(&semantic).unwrap();
-                //gltf_utils::Positions::new(accessor, primitive);
-                //accessor.offset()
-                println!("-- {}", accessor.count());
-            }*/
-        }
-        //mesh.as_json().primitives
-    }
-    //draw_mesh(mesh: &Mesh);
-    //draw_mesh(mesh: &Mesh)
-
-    /***
-     *  End test Three
-     */
-
     let iwidth = (screen_width() as u16) / 4;
     let iheight = (screen_height() as u16) / 4;
 
-    let birb: Texture2D = load_texture("assets/birb.png").await.unwrap();
-    let birb_n_img: Image = load_image("assets/birb_n.png").await.unwrap();
-    let birb_n: Texture2D = Texture2D::from_image(&birb_n_img); //load_texture("assets/birbo_n.png").await.unwrap();
-    let immm = image_helper::flip(&birb_n_img, 0);
-    println!("returned ${}", immm.get_image_data()[((13) as usize)][2]);
-    let birb_nf: Texture2D = Texture2D::from_image(&immm);
-
-    let mut image = Image::gen_image_color(iwidth, iheight, WHITE);
-    let texture = Texture2D::from_image(&image);
-    texture.set_filter(FilterMode::Nearest);
-
-    let im = get_screen_data();
-    let render_pass_first = Texture2D::from_image(&im);
+    let img_pull = get_screen_data();
+    let render_pass_first = Texture2D::from_image(&img_pull);
     render_pass_first.set_filter(FilterMode::Nearest);
 
-    let render_pass_second = Texture2D::from_image(&im);
+    let render_pass_second = Texture2D::from_image(&img_pull);
     render_pass_second.set_filter(FilterMode::Nearest);
 
-    let birbImg: Image = load_image("assets/kiwi.png").await.unwrap();
-    birb.set_filter(FilterMode::Nearest);
-    let chess: Texture2D = load_texture("assets/chess.png").await.unwrap();
-    chess.set_filter(FilterMode::Nearest);
     let screen_material = load_material(
         &std::fs::read_to_string("src/shader.vert").expect("uh oh bad glsl file"),
         &std::fs::read_to_string("src/shader.frag").expect("uh oh bad glsl file"),
@@ -287,17 +137,18 @@ async fn main() {
     )
     .unwrap();
 
-    let mut array: Vec<(f32, f32, bool)> = Vec::new();
-    let mut array_is_dirty: bool = false;
-    array.push((3., 128., true));
-
-    let mut iter: u32 = 0;
-
-    let mut incr_time = 0.;
+    let mut incr_time: f32 = 0.;
 
     let mut last_step_time = 0.;
     let mut last_real_time = 0.;
 
+    screen_material.set_texture("remap", color_lookup);
+
+    let mut last_sw = screen_width();
+    let mut last_sh = screen_height();
+
+    // render_pass_first.update(&get_screen_data());
+    // render_pass_second.update(&get_screen_data());
     loop {
         let mw = screen_width() / 2.;
         let mh = screen_height() / 2.;
@@ -317,7 +168,7 @@ async fn main() {
             "ray",
             (2. * (delta_point.0 - 0.5), 2. * (delta_point.1 - 0.5)),
         );
-        //println!("ray {} {}", 2. * (delta_point.0 - 0.5), 2. * (delta_point.1 - 0.5));
+
         screen_material.set_uniform("resolution", (320. as f32, pixHeight as f32));
         screen_material.set_uniform("ratio", ir);
         screen_material.set_uniform("time", incr_time);
@@ -325,101 +176,52 @@ async fn main() {
         let real_time = get_time();
 
         let tick = if real_time > last_step_time + 0.25 {
-            last_step_time = real_time;
             true
         } else {
             false
         };
-        incr_time += real_time / 1000.;
+        incr_time += (real_time / 1000.) as f32;
         if incr_time > 1. {
             incr_time -= 1.;
         }
         let delta = real_time - last_real_time;
-        last_real_time = real_time;
+        //last_real_time = real_time;
 
-        /* ======== Larry 3D
+        if last_sw == screen_width() && last_sh == screen_height() {
+            /* ======== Larry 3D
 
-         _   _                            _
-        | \ | |                          | |
-        |  \| | ___  _ __ _ __ ___   __ _| |___
-        | . ` |/ _ \| '__| '_ ` _ \ / _` | / __|
-        | |\  | (_) | |  | | | | | | (_| | \__ \
-        |_| \_|\___/|_|  |_| |_| |_|\__,_|_|___/
-                =========*/
-        //tiles.pos_add(1, 0);
-        //layer.pos_add(0., 1.);
-        layer.get_tile(0).pos_add(1, 0);
-        layer.draw_normals(delta as f32, tick);
+             _   _                            _
+            | \ | |                          | |
+            |  \| | ___  _ __ _ __ ___   __ _| |___
+            | . ` |/ _ \| '__| '_ ` _ \ / _` | / __|
+            | |\  | (_) | |  | | | | | | (_| | \__ \
+            |_| \_|\___/|_|  |_| |_| |_|\__,_|_|___/
+                    =========*/
+            //tiles.pos_add(1, 0);
+            //layer.pos_add(0., 0.1);
+            //layer.get_tile(0).pos_add(1, 0);
+            layer.draw_normals(delta as f32, tick);
+            render_pass_first.update(&get_screen_data()); //dump our screen texture to our render_pass_first variable
+            screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
+            clear_background(BLACK);
+            /* ========
+                      _ _              _
+                /\   | | |            | |
+               /  \  | | |__   ___  __| | ___
+              / /\ \ | | '_ \ / _ \/ _` |/ _ \
+             / ____ \| | |_) |  __/ (_| | (_) |
+            /_/    \_\_|_.__/ \___|\__,_|\___/
 
-        //set_default_camera();
+                    =========*/
 
-        texture.update(&image);
+            layer.draw(delta as f32, tick);
 
-        render_pass_first.update(&get_screen_data()); //dump our screen texture to our render_pass_first variable
-        screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
-        screen_material.set_texture("remap", color_lookup); //send this screen capture to our shader
-        clear_background(BLACK);
-
-        //draw_texture(textureFirst, 64.,64.,WHITE);
-        //get_active_render_pass();
-
-        /* ========
-                  _ _              _
-            /\   | | |            | |
-           /  \  | | |__   ___  __| | ___
-          / /\ \ | | '_ \ / _ \/ _` |/ _ \
-         / ____ \| | |_) |  __/ (_| | (_) |
-        /_/    \_\_|_.__/ \___|\__,_|\___/
-
-                =========*/
-
-        if false {
-            set_camera(&Camera3D {
-                //position: vec3(0.001, 1., 0.),
-                position: vec3(1., (incr_time * 20.) as f32, 0.),
-                up: vec3(0., 1., 0.),
-                target: vec3(0., 0., 0.),
-                ..Default::default()
-            });
+            //wrap up pass
+            render_pass_second.update(&get_screen_data());
+            screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
+            clear_background(WHITE);
+            //done
         }
-
-        layer.draw(delta as f32, tick);
-        /*for i in 0..array.len() {
-            //let dir=array[i].2;
-            draw_texture_ex(
-                birb,
-                array[i].0 - 16.,
-                array[i].1 - 16. + 384., //????
-                WHITE,
-                DrawTextureParams {
-                    source: Some(Rect::new((anim as f32) * 32., 0., 32., 32.)),
-                    //dest_size: Some(vec2(32., 32.)),
-                    flip_x: array[i].2,
-                    ..Default::default()
-                },
-            );
-        }*/
-
-        draw_cube(
-            Vec3::new(0., 0., 0.),
-            Vec3::new(10., 2., 10.),
-            render_pass_first,
-            WHITE,
-        );
-        match meshes.get(0) {
-            Some(o) => {
-                draw_mesh(o);
-            }
-            None => {
-                println!("naw")
-            }
-        }
-
-        //wrap up pass
-        render_pass_second.update(&get_screen_data());
-        screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
-        clear_background(WHITE);
-        //done
 
         /*
          _    _                     _
@@ -444,24 +246,8 @@ async fn main() {
         if is_key_pressed(KeyCode::Space) {
             layer.remove_tile(0);
             layer.add_tile(TileBlock::new(20, 20, tile_template, ar));
-            if iter > 192 {
-                iter = 0;
-            }
-            array.push((128., iter as f32, true)); //and::gen_range(20., 160.)
         }
 
-        //dump our dead bois safely outside the entity loop array
-        if array_is_dirty {
-            //info!("dirty");
-            for i in (0..array.len()).rev() {
-                if array[i].0 == -99. {
-                    //info!("dumped and now array now size {}",array.len());
-                    array.remove(i);
-                }
-            }
-
-            array_is_dirty = false;
-        }
         controls::cycle(&mut globals);
         if is_mouse_button_pressed(MouseButton::Left) {
             let t = mouse_position_local();
@@ -478,12 +264,10 @@ async fn main() {
             } else {
                 println!("nope x {} v {}", xx, v);
             }
-
-            //let y1 = ((t.y + 1. / ir) * 6. + 6.) as u16;
-            //let yy = clamp(y1, 0, 11);
-            //tiles.set(10, xx, yy)
         }
 
+        last_sw = screen_width();
+        last_sh = screen_height();
         next_frame().await
     }
     println!("complete");

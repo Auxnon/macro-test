@@ -29,11 +29,12 @@ void main() {
         if(norms.b>.0){
             vec3 n=normalize(vec3(.5-norms.r,.5-norms.g,norms.b-.5)); //.5-norms.g
             vec2 v=normalize(vector);
-            float c=normalize(vec2(n.x*v.x,n.y*v.x)).x;
+            //float c=normalize(vec2(n.x*v.x,n.y*v.x)).x;
             //t = glm::normalize(t - n * glm::dot(n, t));
             //vec2 uv2 = normalize(ray-n*dot(n,ray));//(uv-0.5*uv_screen.xy)/uv_screen.y;
             vec2 new_ray=((uv_screen)-ray);
             float f = dot(vec3(new_ray,1.),n);
+            f*=length(vector);
 
         
             if(uv_screen.x>.99){
@@ -85,12 +86,13 @@ void main() {
             }
             //gl_FragColor = vec4(col);//vec4(1,0,0,1);//mix(col*.6,col,f);//vec4(f,0.,0.,f);
         }else{
-            gl_FragColor = vec4(alb);
+            gl_FragColor = alb;
         }
         //gl_FragColor=texture2D(remap, vec2(uv_screen.x*2.,uv_screen.y*8.));
     }else{ 
-        gl_FragColor = vec4(alb);
+        gl_FragColor = alb;
     }
+     //gl_FragColor =mix(alb,vec4(length(vector),0.5,0.5,1.),1.);
     //gl_FragColor.r=0.;
     //gl_FragColor = vec4(1.,0.,0.,1.);
     /*if(norms.b==0.){
