@@ -14,6 +14,7 @@ pub struct PreEntSchema {
     sprite: String,
     #[serde(default)]
     anims: HashMap<String, (u16, u16)>,
+    sprite_size: (u16, u16),
 }
 #[derive(Debug)]
 pub struct EntSchema {
@@ -22,6 +23,7 @@ pub struct EntSchema {
     albedo: Texture2D,
     normals: Texture2D,
     anims: HashMap<String, (u16, u16)>,
+    sprite_size: (u16, u16),
 }
 impl EntSchema {
     pub fn get_anim(&self, name: String) -> (u16, u16) {
@@ -92,7 +94,7 @@ impl<'b> Ent<'b> {
             self.anim(String::from("Idle"));
         }
         // let max = (birb.width() / birb.height()) as u8;
-        println!("anim {}", delta);
+        // println!("anim {}", delta);
         draw_texture_ex(
             if normal {
                 self.schema.normals
@@ -103,7 +105,12 @@ impl<'b> Ent<'b> {
             self.y - 16., //+ 384.,
             WHITE,
             DrawTextureParams {
-                source: Some(Rect::new((self.anim_index as f32) * 32., 0., 32., 32.)),
+                source: Some(Rect::new(
+                    (self.anim_index * self.schema.sprite_size.0) as f32,
+                    0.,
+                    self.schema.sprite_size.0.into(),
+                    self.schema.sprite_size.1.into(),
+                )),
                 flip_x: self.face_right,
                 ..Default::default()
             },
@@ -145,6 +152,7 @@ impl EntFactory {
             let albedo = load_texture(&text[..]).await.unwrap_or(Texture2D::empty());
             //println!(" texture width {}", albedo.width());
             let normals = load_texture(&ntext[..]).await.unwrap_or(Texture2D::empty());
+
             normals.set_filter(FilterMode::Nearest);
             albedo.set_filter(FilterMode::Nearest);
             let ent = EntSchema {
@@ -153,6 +161,7 @@ impl EntFactory {
                 sprite: schema.sprite,
                 albedo,
                 normals,
+                sprite_size: (32, 32),
             };
             println!("loaded entity as {}", ent.name);
             ent_map.insert(ent.name.to_owned(), ent);
@@ -163,6 +172,7 @@ impl EntFactory {
             sprite: String::from("none"),
             albedo: Texture2D::empty(),
             normals: Texture2D::empty(),
+            sprite_size: (32, 32),
         };
         EntFactory {
             ent_map,

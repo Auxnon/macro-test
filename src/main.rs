@@ -41,6 +41,8 @@ fn conf() -> Conf {
 async fn main() {
     // 320 x 192
 
+    let test_image = load_texture("assets/kiwi-portrait.png").await.unwrap();
+
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
     let level_template: Image = load_image("assets/level_template.png").await.unwrap();
@@ -215,11 +217,22 @@ async fn main() {
                     =========*/
 
             layer.draw(delta as f32, tick);
+            draw_texture_ex(
+                test_image,
+                0.,
+                0., //+ 384.,
+                WHITE,
+                DrawTextureParams {
+                    source: Some(Rect::new(0., 0., 40., 48.)),
+                    flip_x: false,
+                    ..Default::default()
+                },
+            );
 
             //wrap up pass
             render_pass_second.update(&get_screen_data());
             screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
-            clear_background(WHITE);
+            //clear_background(WHITE);
             //done
         }
 
@@ -236,7 +249,7 @@ async fn main() {
                 */
         set_default_camera();
         gl_use_material(screen_material);
-        draw_rectangle(0., 0., screen_width(), screen_height(), RED);
+        //draw_rectangle(0., 0., screen_width(), screen_height(), RED);
 
         gl_use_default_material();
 

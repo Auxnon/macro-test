@@ -97,6 +97,9 @@ impl TileBlock {
                 let id = self.array[j][i].id;
                 let x = (id as u32 % self.template.countx) as f32;
                 let y = (id as u32 / self.template.countx) as f32;
+                // if i == 0 {
+                //     println!("xy {} {}", (i * 16), (j * 16));
+                // }
                 draw_texture_ex(
                     texture,
                     (i * 16) as f32 + ox,
