@@ -1,0 +1,7 @@
+(
+    name: "kiwi-portrait",
+    sprite: "kiwi-portrait",
+    anims: {"Idle":(0,0)},
+    logic: "player",
+    sprite_size: (40,48)
+)

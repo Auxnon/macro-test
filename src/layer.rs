@@ -25,6 +25,11 @@ impl<'a> Layer<'a> {
             ents: vec![],
         }
     }
+    pub fn run(&mut self) {
+        for e in self.ents.iter_mut() {
+            e.run();
+        }
+    }
     pub fn add_tile(&mut self, mut tile: TileBlock) {
         self.tiles.push(tile);
     }

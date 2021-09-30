@@ -1,4 +1,6 @@
+use crate::logic::{get_logic, Logic, Player};
 use macroquad::prelude::*;
+
 use ron::de::from_reader;
 use serde::Deserialize;
 use std::marker::PhantomData;
@@ -15,6 +17,7 @@ pub struct PreEntSchema {
     #[serde(default)]
     anims: HashMap<String, (u16, u16)>,
     sprite_size: (u16, u16),
+    logic: String,
 }
 #[derive(Debug)]
 pub struct EntSchema {
@@ -24,6 +27,7 @@ pub struct EntSchema {
     normals: Texture2D,
     anims: HashMap<String, (u16, u16)>,
     sprite_size: (u16, u16),
+    logic: String,
 }
 impl EntSchema {
     pub fn get_anim(&self, name: String) -> (u16, u16) {
@@ -36,20 +40,40 @@ impl EntSchema {
 
 pub struct Ent<'b> {
     schema: &'b EntSchema,
-    x: f32,
-    y: f32,
+    pub pos: Vec2,
     anim_index: u16,
     face_right: bool,
+    logic: String, //can be empty, intended to override the entity schema for more variety, defaults to schema
+    //logic_obj: dyn Logic,
+    pub logic_fn: fn(&mut Self),
+    pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensiv
 }
+
+// impl<T: IAnimalData> Animal<T> {
 
 impl<'b> Ent<'b> {
     /*pub fn new(schema: String, x: f32, y: f32) -> Ent {
     }*/
     pub fn set_x(&mut self, x: f32) {
-        self.x = x;
+        self.pos.x = x;
+    }
+    pub fn set_xy(&mut self, x: f32, y: f32) {
+        self.pos.x = x;
+        self.pos.y = y;
+    }
+    /* pub fn get_logic(&self) -> String {
+        if self.logic.len() == 0 {
+            self.schema.logic
+        } else {
+            self.logic
+        }
+    }*/
+    pub fn set_logic() {}
+    pub fn run(&mut self) {
+        (self.logic_fn)(self);
     }
     pub fn get_x(&self) -> f32 {
-        self.x
+        self.pos.x
     }
     pub fn get_name(&self) -> String {
         self.schema.name.to_owned()
@@ -61,7 +85,7 @@ impl<'b> Ent<'b> {
         self.schema.get_anim(animation)
     }
     pub fn anim(&mut self, animation: String) {
-        let inds = self.get_anim(animation);
+        let inds = self.schema.get_anim(animation);
         self.anim_index += 1;
         if self.anim_index > inds.1 {
             self.anim_index = inds.0;
@@ -70,39 +94,34 @@ impl<'b> Ent<'b> {
     pub fn draw(&mut self, delta: f32, tick: bool, normal: bool) {
         //for i in 0..array.len() {
         //let dir = array[i].2;
-        self.x += if self.face_right {
-            2. * delta
-        } else {
-            -2. * delta
-        };
-        let x = self.x;
-        let y = self.y;
+        // if self.schema.logic.chars().count() <= 0 {
+        //     self.pos.x += if self.face_right {
+        //         2. * delta
+        //     } else {
+        //         -2. * delta
+        //     };
+        // }
+        let x = self.pos.x;
+        let y = self.pos.y;
 
         if x > 320. {
-            //x-=2.;
             self.face_right = !self.face_right;
         } else if x < 0. {
-            //x+=2.;
-            //
-            //i-=1;
-            //array[i].0=-99.; //we'll mark it dead on the x position like as a weird work around
-            //array_is_dirty=true;
-
             self.face_right = !self.face_right;
         }
-        if !normal && tick {
-            self.anim(String::from("Idle"));
+        if normal && tick {
+            self.anim("Idle".to_owned());
         }
         // let max = (birb.width() / birb.height()) as u8;
-        // println!("anim {}", delta);
+        // println!("anim {:?}", self.schema.sprite_size);
         draw_texture_ex(
             if normal {
                 self.schema.normals
             } else {
                 self.schema.albedo
             }, //if dir {birb_n} else {birb_nf},
-            self.x - 16.,
-            self.y - 16., //+ 384.,
+            (self.pos.x - self.schema.sprite_size.0 as f32).floor(),
+            (self.pos.y - self.schema.sprite_size.1 as f32).floor(), //+ 384.,
             WHITE,
             DrawTextureParams {
                 source: Some(Rect::new(
@@ -161,7 +180,8 @@ impl EntFactory {
                 sprite: schema.sprite,
                 albedo,
                 normals,
-                sprite_size: (32, 32),
+                logic: schema.logic,
+                sprite_size: schema.sprite_size,
             };
             println!("loaded entity as {}", ent.name);
             ent_map.insert(ent.name.to_owned(), ent);
@@ -173,6 +193,7 @@ impl EntFactory {
             albedo: Texture2D::empty(),
             normals: Texture2D::empty(),
             sprite_size: (32, 32),
+            logic: "".to_string(),
         };
         EntFactory {
             ent_map,
@@ -187,12 +208,18 @@ impl EntFactory {
             None => &self.default_ent_schema,
         };
         //(self.default_ent_schema);
+        //fn basic(ent: &mut Ent) {}
+        //let f = get_logic("player".to_owned());
+        //let r = rand::gen_range(0, 2);
+        let fuc = get_logic(sc.logic.clone());
         Ent {
             schema: sc,
-            x: 0.,
-            y: 0.,
+            pos: Vec2::new(0., 0.),
             anim_index: 0,
             face_right: false,
+            evaluate: false,
+            logic: String::new(),
+            logic_fn: fuc,
         }
     }
 }

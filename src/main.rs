@@ -16,6 +16,7 @@ mod entity;
 mod global;
 mod image_helper;
 mod layer;
+mod logic;
 mod menu;
 mod shader_loader;
 mod tile;
@@ -23,6 +24,7 @@ mod tile;
 use entity::{Ent, EntFactory};
 use global::Global;
 use layer::Layer;
+use logic::get_logic;
 use std::collections::HashMap;
 use std::process::exit;
 use tile::TileBlock;
@@ -40,8 +42,6 @@ fn conf() -> Conf {
 #[macroquad::main(conf())]
 async fn main() {
     // 320 x 192
-
-    let test_image = load_texture("assets/kiwi-portrait.png").await.unwrap();
 
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
@@ -97,11 +97,22 @@ async fn main() {
     /***
      * Test Two
      */
-
-    let mut layer: Layer = Layer::new(1., 0., 576.); //573
-                                                     //tiles.pos_add(20, 0);
+    let mut layer: Layer = Layer::new(1., 0., 0.);
     layer.add_tile(tiles);
-    layer.add_ent(ent_factory.create_ent("birb-npc"));
+
+    let mut player = ent_factory.create_ent("kiwi");
+    player.set_xy(16. * 14., 16. * 6.);
+    layer.add_ent(player);
+
+    for i in 0..10 {
+        let mut player2 = ent_factory.create_ent("kiwi");
+        player2.set_xy(16. * (8. + i as f32), 16. * 6.);
+        layer.add_ent(player2);
+    }
+
+    let mut kp = ent_factory.create_ent("kiwi-portrait");
+    kp.set_xy(16. * 14., 16. * 6.);
+    layer.add_ent(kp);
 
     /***
      * END Test Two
@@ -111,10 +122,15 @@ async fn main() {
     let iheight = (screen_height() as u16) / 4;
 
     let img_pull = get_screen_data();
-    let render_pass_first = Texture2D::from_image(&img_pull);
+    /*Image {
+        width: 320,
+        height: 192,
+        bytes: vec![],
+    };*/
+    let mut render_pass_first = Texture2D::from_image(&img_pull);
     render_pass_first.set_filter(FilterMode::Nearest);
 
-    let render_pass_second = Texture2D::from_image(&img_pull);
+    let mut render_pass_second = Texture2D::from_image(&img_pull);
     render_pass_second.set_filter(FilterMode::Nearest);
 
     let screen_material = load_material(
@@ -189,52 +205,59 @@ async fn main() {
         let delta = real_time - last_real_time;
         //last_real_time = real_time;
 
-        if last_sw == screen_width() && last_sh == screen_height() {
-            /* ======== Larry 3D
+        /* ======== Larry 3D
 
-             _   _                            _
-            | \ | |                          | |
-            |  \| | ___  _ __ _ __ ___   __ _| |___
-            | . ` |/ _ \| '__| '_ ` _ \ / _` | / __|
-            | |\  | (_) | |  | | | | | | (_| | \__ \
-            |_| \_|\___/|_|  |_| |_| |_|\__,_|_|___/
-                    =========*/
-            //tiles.pos_add(1, 0);
-            //layer.pos_add(0., 0.1);
-            //layer.get_tile(0).pos_add(1, 0);
-            layer.draw_normals(delta as f32, tick);
-            render_pass_first.update(&get_screen_data()); //dump our screen texture to our render_pass_first variable
-            screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
-            clear_background(BLACK);
-            /* ========
-                      _ _              _
-                /\   | | |            | |
-               /  \  | | |__   ___  __| | ___
-              / /\ \ | | '_ \ / _ \/ _` |/ _ \
-             / ____ \| | |_) |  __/ (_| | (_) |
-            /_/    \_\_|_.__/ \___|\__,_|\___/
-
-                    =========*/
-
-            layer.draw(delta as f32, tick);
-            draw_texture_ex(
-                test_image,
-                0.,
-                0., //+ 384.,
-                WHITE,
-                DrawTextureParams {
-                    source: Some(Rect::new(0., 0., 40., 48.)),
-                    flip_x: false,
-                    ..Default::default()
-                },
-            );
-
-            //wrap up pass
-            render_pass_second.update(&get_screen_data());
-            screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
-            //clear_background(WHITE);
-            //done
+         _   _                            _
+        | \ | |                          | |
+        |  \| | ___  _ __ _ __ ___   __ _| |___
+        | . ` |/ _ \| '__| '_ ` _ \ / _` | / __|
+        | |\  | (_) | |  | | | | | | (_| | \__ \
+        |_| \_|\___/|_|  |_| |_| |_|\__,_|_|___/
+                =========*/
+        //tiles.pos_add(1, 0);
+        //layer.pos_add(0., 0.1);
+        //layer.get_tile(0).pos_add(1, 0);
+        layer.draw_normals(delta as f32, tick);
+        unsafe {
+            macroquad::window::get_internal_gl().flush();
         }
+        render_pass_first.grab_screen(); //dump our screen texture to our render_pass_first variable
+        screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
+        clear_background(RED);
+        /* ========
+                  _ _              _
+            /\   | | |            | |
+           /  \  | | |__   ___  __| | ___
+          / /\ \ | | '_ \ / _ \/ _` |/ _ \
+         / ____ \| | |_) |  __/ (_| | (_) |
+        /_/    \_\_|_.__/ \___|\__,_|\___/
+
+                =========*/
+
+        layer.draw(delta as f32, tick);
+        // draw_texture_ex(
+        //     test_image,
+        //     0.,
+        //     0., //+ 384.,
+        //     WHITE,
+        //     DrawTextureParams {
+        //         source: Some(Rect::new(0., 0., 40., 48.)),
+        //         ..Default::default()
+        //     },
+        // );
+
+        //dest_size: Some(Vec2::new(320., 192.)),
+
+        //wrap up pass
+        unsafe {
+            macroquad::window::get_internal_gl().flush();
+        }
+        render_pass_second.grab_screen();
+        screen_material.set_texture("albedo", render_pass_second); //send this screen capture to our shader
+                                                                   //clear_background(WHITE);
+                                                                   //done
+
+        if last_sw == screen_width() && last_sh == screen_height() {}
 
         /*
          _    _                     _
@@ -247,9 +270,23 @@ async fn main() {
                |_|
 
                 */
+
         set_default_camera();
         gl_use_material(screen_material);
-        //draw_rectangle(0., 0., screen_width(), screen_height(), RED);
+        draw_texture_ex(
+            render_pass_second,
+            0.,
+            0., //+ 384.,
+            WHITE,
+            DrawTextureParams {
+                source: Some(Rect::new(0., screen_height() - 192., 320., 192.)),
+                flip_y: true,
+                dest_size: Some(Vec2::new(screen_width(), screen_height())),
+                ..Default::default()
+            },
+        );
+        //
+        //draw_rectangle(128., 0., screen_width(), screen_height(), RED);
 
         gl_use_default_material();
 
@@ -262,6 +299,7 @@ async fn main() {
         }
 
         controls::cycle(&mut globals);
+        layer.run();
         if is_mouse_button_pressed(MouseButton::Left) {
             let t = mouse_position_local();
             let xx = ((t.x + 1.) / 2.) as u16;
@@ -281,11 +319,33 @@ async fn main() {
 
         last_sw = screen_width();
         last_sh = screen_height();
+        last_real_time = real_time;
         next_frame().await
     }
     println!("complete");
     exit(0);
 }
+/*
+fn get_screen_data_custom() -> Image {
+    unsafe {
+        macroquad::window::get_internal_gl().flush();
+    }
+
+    let context = macroquad::
+
+    let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
+        &mut context.quad_context,
+        miniquad::TextureParams {
+            width: context.screen_width as _,
+            height: context.screen_height as _,
+            ..Default::default()
+        },
+    ));
+
+    texture.grab_screen();
+
+    texture.get_texture_data()
+}*/
 
 fn drawAlbedo() {}
 
