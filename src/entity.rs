@@ -1,6 +1,8 @@
-use crate::logic::{get_logic, Logic, Player};
+use crate::logic::get_logic;
 use macroquad::prelude::*;
 
+use crate::lua_define::LuaCore;
+use mlua::{UserData, UserDataMethods};
 use ron::de::from_reader;
 use serde::Deserialize;
 use std::marker::PhantomData;
@@ -41,16 +43,53 @@ impl EntSchema {
 pub struct Ent<'b> {
     schema: &'b EntSchema,
     pub pos: Vec2,
+    pub vel: Vec2,
     anim_index: u16,
     face_right: bool,
     logic: String, //can be empty, intended to override the entity schema for more variety, defaults to schema
     //logic_obj: dyn Logic,
-    pub logic_fn: fn(&mut Self),
-    pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensiv
+    pub grounded: bool,
+    pub edge_left: bool,
+    pub edge_right: bool,
+    pub primed: bool,
+    pub logic_fn: mlua::Function<'b>, //fn(&mut Self, f32),
+    pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensive
 }
-
+struct LuaEnt<'b> {
+    ent: Ent<'b>,
+}
 // impl<T: IAnimalData> Animal<T> {
+// impl<'b> UserData for LuaEnt<'b> {
+//     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+//         methods.add_method("add_x", |_, this, ()| Ok(Self.ent.set_x(10.)));
 
+//         methods.add_async_function(
+//             "read",
+//             |lua, (this, size): (AnyUserData, usize)| async move {
+//                 let mut this = this.borrow_mut::<Self>()?;
+//                 let mut buf = vec![0; size];
+//                 let n = this.0.read(&mut buf).await?;
+//                 buf.truncate(n);
+//                 lua.create_string(&buf)
+//             },
+//         );
+
+//         methods.add_async_function(
+//             "write",
+//             |_, (this, data): (AnyUserData, LuaString)| async move {
+//                 let mut this = this.borrow_mut::<Self>()?;
+//                 let n = this.0.write(&data.as_bytes()).await?;
+//                 Ok(n)
+//             },
+//         );
+
+//         methods.add_async_function("close", |_, this: AnyUserData| async move {
+//             let mut this = this.borrow_mut::<Self>()?;
+//             this.0.shutdown().await?;
+//             Ok(())
+//         });
+//     }
+// }
 impl<'b> Ent<'b> {
     /*pub fn new(schema: String, x: f32, y: f32) -> Ent {
     }*/
@@ -69,8 +108,16 @@ impl<'b> Ent<'b> {
         }
     }*/
     pub fn set_logic() {}
-    pub fn run(&mut self) {
-        (self.logic_fn)(self);
+    pub fn run(&mut self, delta: f32) {
+        //(self.logic_fn)(self, delta);
+        let res = self.logic_fn.call::<_, f32>(self.pos.y);
+        if res.is_err() {
+            println!("bad return!");
+            return;
+        }
+        let y = res.unwrap();
+        println!("got back {}", y);
+        self.pos.y = y;
     }
     pub fn get_x(&self) -> f32 {
         self.pos.x
@@ -80,6 +127,12 @@ impl<'b> Ent<'b> {
     }
     pub fn get_schema(&self) -> &EntSchema {
         self.schema
+    }
+    pub fn get_width(&self) -> f32 {
+        self.schema.sprite_size.0 as f32
+    }
+    pub fn get_height(&self) -> f32 {
+        self.schema.sprite_size.1 as f32
     }
     fn get_anim(&mut self, animation: String) -> (u16, u16) {
         self.schema.get_anim(animation)
@@ -120,8 +173,8 @@ impl<'b> Ent<'b> {
             } else {
                 self.schema.albedo
             }, //if dir {birb_n} else {birb_nf},
-            (self.pos.x - self.schema.sprite_size.0 as f32).floor(),
-            (self.pos.y - self.schema.sprite_size.1 as f32).floor(), //+ 384.,
+            (self.pos.x as f32).floor(), // - self.schema.sprite_size.0
+            (self.pos.y).floor(),        //+ 384., //- self.schema.sprite_size.1 as f32
             WHITE,
             DrawTextureParams {
                 source: Some(Rect::new(
@@ -137,13 +190,14 @@ impl<'b> Ent<'b> {
     }
 }
 
-pub struct EntFactory {
+pub struct EntFactory<'a> {
     ent_map: HashMap<String, EntSchema>,
     default_ent_schema: EntSchema,
+    lua_core: LuaCore<'a>,
 }
 
-impl EntFactory {
-    pub async fn new() -> EntFactory {
+impl<'a> EntFactory<'a> {
+    pub async fn new() -> EntFactory<'a> {
         let input_path = Path::new(".").join("entities");
         //let input_path = format!("{}/entities/", env!("CARGO_MANIFEST_DIR"));
         let mut ent_map = HashMap::new();
@@ -198,6 +252,7 @@ impl EntFactory {
         EntFactory {
             ent_map,
             default_ent_schema,
+            lua_core: LuaCore::new(),
         }
     }
     pub fn create_ent(&self, schema: &str) -> Ent {
@@ -211,13 +266,19 @@ impl EntFactory {
         //fn basic(ent: &mut Ent) {}
         //let f = get_logic("player".to_owned());
         //let r = rand::gen_range(0, 2);
-        let fuc = get_logic(sc.logic.clone());
+        //let fuc = get_logic(sc.logic.clone(), self.lua_core);
+        let fuc = self.lua_core.load(sc.logic.clone());
         Ent {
             schema: sc,
             pos: Vec2::new(0., 0.),
+            vel: Vec2::new(0., 0.),
             anim_index: 0,
             face_right: false,
             evaluate: false,
+            grounded: false,
+            primed: false,
+            edge_left: false,
+            edge_right: false,
             logic: String::new(),
             logic_fn: fuc,
         }

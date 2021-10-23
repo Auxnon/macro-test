@@ -1,6 +1,7 @@
 (
-    name: "kiwi",
-    sprite: "fatty",
+    name: "birb-npc",
+    sprite: "sprites/fatty",
     anims: {"Idle":(0,0)},
-    logic: "player"
+    logic: "walker",
+    sprite_size: (32,32)
 )

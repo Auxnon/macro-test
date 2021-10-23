@@ -17,6 +17,7 @@ mod global;
 mod image_helper;
 mod layer;
 mod logic;
+mod lua_define;
 mod menu;
 mod shader_loader;
 mod tile;
@@ -27,6 +28,7 @@ use layer::Layer;
 use logic::get_logic;
 use std::collections::HashMap;
 use std::process::exit;
+use tile::Tile;
 use tile::TileBlock;
 
 fn conf() -> Conf {
@@ -42,6 +44,7 @@ fn conf() -> Conf {
 #[macroquad::main(conf())]
 async fn main() {
     // 320 x 192
+    //lua_test::test_lua();
 
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
@@ -104,15 +107,19 @@ async fn main() {
     player.set_xy(16. * 14., 16. * 6.);
     layer.add_ent(player);
 
-    for i in 0..10 {
-        let mut player2 = ent_factory.create_ent("kiwi");
-        player2.set_xy(16. * (8. + i as f32), 16. * 6.);
-        layer.add_ent(player2);
-    }
+    // for i in 0..10 {
+    //     let mut player2 = ent_factory.create_ent("kiwi");
+    //     player2.set_xy(16. * (8. + i as f32), 16. * 6.);
+    //     layer.add_ent(player2);
+    // }
 
-    let mut kp = ent_factory.create_ent("kiwi-portrait");
-    kp.set_xy(16. * 14., 16. * 6.);
-    layer.add_ent(kp);
+    // let mut kp = ent_factory.create_ent("kiwi-portrait");
+    // kp.set_xy(16. * 14., 16. * 6.);
+    // layer.add_ent(kp);
+
+    let mut npc = ent_factory.create_ent("birb-npc");
+    npc.set_xy(16. * 12., 16. * 6.);
+    layer.add_ent(npc);
 
     /***
      * END Test Two
@@ -223,7 +230,7 @@ async fn main() {
         }
         render_pass_first.grab_screen(); //dump our screen texture to our render_pass_first variable
         screen_material.set_texture("normals", render_pass_first); //send this screen capture to our shader
-        clear_background(RED);
+        clear_background(Color::new(0.803, 0.945, 0.976, 1.));
         /* ========
                   _ _              _
             /\   | | |            | |
@@ -293,13 +300,13 @@ async fn main() {
         if is_key_pressed(KeyCode::Escape) {
             break;
         }
-        if is_key_pressed(KeyCode::Space) {
-            layer.remove_tile(0);
-            layer.add_tile(TileBlock::new(20, 20, tile_template, ar));
-        }
+        // if is_key_pressed(KeyCode::Space) {
+        //     layer.remove_tile(0);
+        //     layer.add_tile(TileBlock::new(20, 20, tile_template, ar));
+        // }
 
         controls::cycle(&mut globals);
-        layer.run();
+        layer.run((delta) as f32);
         if is_mouse_button_pressed(MouseButton::Left) {
             let t = mouse_position_local();
             let xx = ((t.x + 1.) / 2.) as u16;
