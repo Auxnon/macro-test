@@ -43,8 +43,8 @@ impl<'a> LuaCore<'a> {
                     Err(err) => {
                         println!("bad lua code {} !!", str);
                         let globals = self.lua.globals();
-                        let d: Function = globals.get("default_func").unwrap();
-                        *d
+                        let d: Function = globals.get("default_func").unwrap()
+                        
                     }
                 };
                 h
