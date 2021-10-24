@@ -20,7 +20,7 @@ impl<'a> LuaCore<'a> {
         let multi = lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
         globals.set("multi", multi.unwrap());
 
-        let default_func = lua.create_function(|_, (x): (f32)| Ok(x - 0.1)).unwrap();
+        let default_func = lua.create_function(|_, (x): (f32)| Ok(x - 0.02)).unwrap();
         globals.set("default_func", default_func);
         drop(globals);
 
@@ -33,16 +33,19 @@ impl<'a> LuaCore<'a> {
     pub fn load(&self, str: String) {
         let input_path = Path::new(".").join("entities").join("scripty.lua");
         let st = fs::read_to_string(input_path).unwrap_or_default();
+       // println!(st);
         let chunk = self.lua.load(&st);
         let globals = self.lua.globals();
+        //chunk.eval()
+        //let d= chunk.eval::<mlua::Chunk>();
 
-        match chunk.into_function() {
+        match chunk.eval::<mlua::Function>() {
             Ok(code) => {
                 println!("::lua:: code loaded {} ♥", str);
                 globals.set(str, code);
             }
             Err(err) => {
-                println!("::lua::  bad lua code {} !! Assigning default", str);
+                println!("::lua::  bad lua code for {} !! Assigning default {}", str,err);
                 globals.set(str, globals.get::<_, Function>("default_func").unwrap());
             }
         }
@@ -57,10 +60,14 @@ impl<'a> LuaCore<'a> {
         let res = globals.get::<_, Function>(str.to_owned());
         if res.is_err() {
             self.load(str.to_owned());
-            let res2 = globals.get::<_, Function>(str);
-            if res2.is_err() {}
+            let res2 = globals.get::<_, Function>(str.to_owned());
+            if res2.is_err() {
+                println!("::lua:: failed to get lua code for {} even after default func",str);
+            }
+            println!("::lua:: we didnt find lua code so we loaded it and returned it for {}",str);
             res2.unwrap()
         } else {
+            println!("::lua::we got and returned a func for {}",str);
             res.unwrap()
         }
         //let res: Function = globals.get::<_, Function>("default_func").unwrap();

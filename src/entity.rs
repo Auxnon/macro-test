@@ -108,17 +108,19 @@ impl<'b> Ent<'b> {
         }
     }*/
     pub fn set_logic() {}
+
     pub fn run(&mut self, delta: f32) {
         //(self.logic_fn)(self, delta);
-        let res = self.logic_fn.call::<_, f32>(self.pos.y);
+        let res = self.logic_fn.call::<_, _>(self.pos.y);
         if res.is_err() {
-            println!("bad return!");
+            println!("bad return! {:?}",res.err());
             return;
         }
         let y = res.unwrap();
         println!("got back {}", y);
         self.pos.y = y;
     }
+
     pub fn get_x(&self) -> f32 {
         self.pos.x
     }
@@ -268,6 +270,7 @@ impl<'a> EntFactory<'a> {
         //let r = rand::gen_range(0, 2);
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
         let fuc = self.lua_core.get(sc.logic.clone());
+        println!("::ent:: we loaded func for {}",sc.logic.clone());
         Ent {
             schema: sc,
             pos: Vec2::new(0., 0.),

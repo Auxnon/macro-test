@@ -1,1 +1,5 @@
-go(4,3)
+
+   function(a)
+     return a-1.
+   end
+
