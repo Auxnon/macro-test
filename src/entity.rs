@@ -1,5 +1,6 @@
 use crate::logic::get_logic;
 use macroquad::prelude::*;
+use mlua::Value::Nil;
 
 use crate::lua_define::LuaCore;
 use mlua::{UserData, UserDataMethods};
@@ -55,8 +56,22 @@ pub struct Ent<'b> {
     pub logic_fn: mlua::Function<'b>, //fn(&mut Self, f32),
     pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensive
 }
-struct LuaEnt<'b> {
-    ent: Ent<'b>,
+pub struct LuaEnt {
+    pub x: f32,
+    pub y: f32,
+}
+impl UserData for LuaEnt {
+    // pub fn new() -> LuaEnt {
+    //     return LuaEnt { x: 10., y: 12. };
+    // }
+}
+impl Clone for LuaEnt {
+    fn clone(&self) -> LuaEnt {
+        LuaEnt {
+            x: self.x,
+            y: self.y,
+        }
+    }
 }
 // impl<T: IAnimalData> Animal<T> {
 // impl<'b> UserData for LuaEnt<'b> {
@@ -111,14 +126,23 @@ impl<'b> Ent<'b> {
 
     pub fn run(&mut self, delta: f32) {
         //(self.logic_fn)(self, delta);
-        let res = self.logic_fn.call::<_, _>(self.pos.y);
+
+        let testo = LuaEnt {
+            x: self.pos.x,
+            y: self.pos.y,
+        };
+
+        let res = self.logic_fn.call::<_, LuaEnt>((testo));
         if res.is_err() {
-            println!("bad return! {:?}",res.err());
+            println!("bad return! 📜{} {:#?}", self.get_schema().logic, res.err());
             return;
         }
-        let y = res.unwrap();
-        println!("got back {}", y);
-        self.pos.y = y;
+
+        let ent = res.unwrap();
+        //println!("got back {} and {}", ent.x, ent.y);
+        self.pos.x = ent.x;
+
+        self.pos.y = ent.y;
     }
 
     pub fn get_x(&self) -> f32 {
@@ -270,7 +294,7 @@ impl<'a> EntFactory<'a> {
         //let r = rand::gen_range(0, 2);
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
         let fuc = self.lua_core.get(sc.logic.clone());
-        println!("::ent:: we loaded func for {}",sc.logic.clone());
+        println!("::ent:: we loaded func for {}", sc.logic.clone());
         Ent {
             schema: sc,
             pos: Vec2::new(0., 0.),

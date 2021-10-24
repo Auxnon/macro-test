@@ -1,4 +1,4 @@
-use crate::Ent;
+use crate::entity::LuaEnt;
 use mlua::{Function, Lua, UserData, UserDataMethods};
 
 use std::{collections::HashMap, fs, path::Path};
@@ -17,10 +17,13 @@ impl<'a> LuaCore<'a> {
         let multi = lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
         globals.set("multi", multi.unwrap());
 
-        let multi = lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
-        globals.set("multi", multi.unwrap());
+        let make_ent = lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaEnt { x, y }));
+        globals.set("make_ent", make_ent.unwrap());
 
-        let default_func = lua.create_function(|_, (x): (f32)| Ok(x - 0.02)).unwrap();
+        // let default_func = lua
+        //     .create_function(|_, e: crate::entity::LuaEnt| Ok(e))
+        //     .unwrap();
+        let default_func = lua.create_function(|_, e: f32| Ok(e)).unwrap();
         globals.set("default_func", default_func);
         drop(globals);
 
@@ -31,9 +34,12 @@ impl<'a> LuaCore<'a> {
     }
 
     pub fn load(&self, str: String) {
-        let input_path = Path::new(".").join("entities").join("scripty.lua");
+        let input_path = Path::new(".")
+            .join("scripts")
+            .join(str.to_owned())
+            .with_extension("lua");
         let st = fs::read_to_string(input_path).unwrap_or_default();
-       // println!(st);
+        println!("::lua:: got script {} :\n{}", str, st);
         let chunk = self.lua.load(&st);
         let globals = self.lua.globals();
         //chunk.eval()
@@ -41,11 +47,14 @@ impl<'a> LuaCore<'a> {
 
         match chunk.eval::<mlua::Function>() {
             Ok(code) => {
-                println!("::lua:: code loaded {} ♥", str);
+                println!("::lua:: code loaded 📜{} ♥", str);
                 globals.set(str, code);
             }
             Err(err) => {
-                println!("::lua::  bad lua code for {} !! Assigning default {}", str,err);
+                println!(
+                    "::lua::  bad lua code for 📜{} !! Assigning default \"{}\"",
+                    str, err
+                );
                 globals.set(str, globals.get::<_, Function>("default_func").unwrap());
             }
         }
@@ -62,12 +71,18 @@ impl<'a> LuaCore<'a> {
             self.load(str.to_owned());
             let res2 = globals.get::<_, Function>(str.to_owned());
             if res2.is_err() {
-                println!("::lua:: failed to get lua code for {} even after default func",str);
+                println!(
+                    "::lua:: failed to get lua code for 📜{} even after default func",
+                    str
+                );
             }
-            println!("::lua:: we didnt find lua code so we loaded it and returned it for {}",str);
+            println!(
+                "::lua:: we didnt find lua code so we loaded it and returned it for 📜{}",
+                str
+            );
             res2.unwrap()
         } else {
-            println!("::lua::we got and returned a func for {}",str);
+            println!("::lua::we got and returned a func for {}", str);
             res.unwrap()
         }
         //let res: Function = globals.get::<_, Function>("default_func").unwrap();
