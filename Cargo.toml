@@ -14,4 +14,4 @@ ron = "0.6.5"
 serde ="^1.0"
 gltf ="0.16.0"
 itertools="0.10.1"
-mlua ={version= "^0.6.3", features=["lua54"]}
+mlua ={version= "^0.6.3", features=["lua54","vendored"]}

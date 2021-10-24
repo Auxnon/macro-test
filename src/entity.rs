@@ -267,7 +267,7 @@ impl<'a> EntFactory<'a> {
         //let f = get_logic("player".to_owned());
         //let r = rand::gen_range(0, 2);
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
-        let fuc = self.lua_core.load(sc.logic.clone());
+        let fuc = self.lua_core.get(sc.logic.clone());
         Ent {
             schema: sc,
             pos: Vec2::new(0., 0.),
