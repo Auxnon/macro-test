@@ -1,9 +1,9 @@
 use crate::logic::get_logic;
 use macroquad::prelude::*;
-use mlua::Value::Nil;
+use mlua::prelude::*;
 
 use crate::lua_define::LuaCore;
-use mlua::{UserData, UserDataMethods};
+use mlua::{ToLua, UserData, UserDataMethods};
 use ron::de::from_reader;
 use serde::Deserialize;
 use std::marker::PhantomData;
@@ -60,11 +60,25 @@ pub struct LuaEnt {
     pub x: f32,
     pub y: f32,
 }
-impl UserData for LuaEnt {
+
+impl LuaUserData for LuaEnt {
     // pub fn new() -> LuaEnt {
     //     return LuaEnt { x: 10., y: 12. };
     // }
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("x", |_,this, ()| 
+        
+            Ok(this.x)
+        );
+        methods.add_method("y", |_,this, ()| Ok(this.y));
+        //methods.add_method("add_x", |_, this, ()| Ok(Self.ent.set_x(10.)));
+
+        // methods.add_meta_function(MetaMethod::Add, |_, (vec1, vec2): (Vec2, Vec2)| {
+        //     Ok(Vec2(vec1.0 + vec2.0, vec1.1 + vec2.1))
+        // });
+    }
 }
+
 impl Clone for LuaEnt {
     fn clone(&self) -> LuaEnt {
         LuaEnt {
@@ -73,6 +87,7 @@ impl Clone for LuaEnt {
         }
     }
 }
+
 // impl<T: IAnimalData> Animal<T> {
 // impl<'b> UserData for LuaEnt<'b> {
 //     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -131,6 +146,7 @@ impl<'b> Ent<'b> {
             x: self.pos.x,
             y: self.pos.y,
         };
+
 
         let res = self.logic_fn.call::<_, LuaEnt>((testo));
         if res.is_err() {
