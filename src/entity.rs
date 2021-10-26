@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use mlua::prelude::*;
 
 use crate::lua_define::LuaCore;
-use mlua::{ToLua, UserData, UserDataMethods};
+use mlua::{ToLua, UserData, UserDataMethods,UserDataFields};
 use ron::de::from_reader;
 use serde::Deserialize;
 use std::marker::PhantomData;
@@ -62,22 +62,29 @@ pub struct LuaEnt {
 }
 
 impl LuaUserData for LuaEnt {
-    // pub fn new() -> LuaEnt {
-    //     return LuaEnt { x: 10., y: 12. };
-    // }
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("x", |_,this, ()| 
-        
+        methods.add_method("get_x", |_,this, ()| 
             Ok(this.x)
         );
-        methods.add_method("y", |_,this, ()| Ok(this.y));
-        //methods.add_method("add_x", |_, this, ()| Ok(Self.ent.set_x(10.)));
+        methods.add_method("get_y", |_,this, ()| Ok(this.y));
+        
+    }
+    fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
+        fields.add_field_method_get("x", |_, this| Ok(this.x));
+        fields.add_field_method_set("x", |_, this,x:f32| { Ok(this.x=x)});
+        fields.add_field_method_get("y", |_, this| Ok(this.y));
+        fields.add_field_method_set("y", |_, this,y:f32| { Ok(this.y=y)});
+
+    }
+}
+ // pub fn new() -> LuaEnt {
+    //     return LuaEnt { x: 10., y: 12. };
+    // }
+//methods.add_method("add_x", |_, this, ()| Ok(Self.ent.set_x(10.)));
 
         // methods.add_meta_function(MetaMethod::Add, |_, (vec1, vec2): (Vec2, Vec2)| {
         //     Ok(Vec2(vec1.0 + vec2.0, vec1.1 + vec2.1))
         // });
-    }
-}
 
 impl Clone for LuaEnt {
     fn clone(&self) -> LuaEnt {
@@ -148,14 +155,14 @@ impl<'b> Ent<'b> {
         };
 
 
-        let res = self.logic_fn.call::<_, LuaEnt>((testo));
+        let res = self.logic_fn.call::<LuaEnt, LuaEnt>((testo));
         if res.is_err() {
             println!("bad return! 📜{} {:#?}", self.get_schema().logic, res.err());
             return;
         }
 
         let ent = res.unwrap();
-        //println!("got back {} and {}", ent.x, ent.y);
+        println!("got back {} and {}", ent.x, ent.y);
         self.pos.x = ent.x;
 
         self.pos.y = ent.y;
