@@ -1,6 +1,6 @@
-use crate::entity::LuaEnt;
-use mlua::{Function, Lua, UserData, UserDataMethods};
 
+use mlua::{Function, Lua, UserData, UserDataMethods};
+use crate::LuaEnt;
 use std::{collections::HashMap, fs, path::Path};
 
 pub struct LuaCore<'a> {
@@ -17,8 +17,8 @@ impl<'a> LuaCore<'a> {
         let multi = lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
         globals.set("multi", multi.unwrap());
 
-        let make_ent = lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaEnt { x, y }));
-        globals.set("make_ent", make_ent.unwrap());
+        // let make_ent = lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaEnt { x, y }));
+        // globals.set("make_ent", make_ent.unwrap());
 
         // let default_func = lua
         //     .create_function(|_, e: crate::entity::LuaEnt| Ok(e))

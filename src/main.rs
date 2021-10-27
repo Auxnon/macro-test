@@ -9,10 +9,14 @@ use gltf::scene::Node;
 use gltf::{Document, Gltf, Mesh, Primitive, Scene};
 use itertools::{izip, Itertools};
 
+
 //use gltf_importer::import;
 use macroquad::prelude::*;
+mod three_test;
 mod controls;
-mod entity;
+mod ent;
+mod lua_ent;
+mod ent_factory;
 mod global;
 mod image_helper;
 mod layer;
@@ -22,7 +26,10 @@ mod menu;
 mod shader_loader;
 mod tile;
 
-use entity::{Ent, EntFactory};
+
+use ent::Ent;
+use lua_ent::LuaEnt;
+use ent_factory::EntFactory;
 use global::Global;
 use layer::Layer;
 use logic::get_logic;
@@ -67,6 +74,8 @@ async fn main() {
      * Set palette bloom and shading values for our shader
      */
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
+    let grass_test:Texture2D= load_texture("assets/sprites/grass_down.png").await.unwrap();
+    grass_test.set_filter(FilterMode::Nearest);
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
         Image::gen_image_color(256, 32, Color::from_rgba(cc[0], cc[1], cc[2], 255));
@@ -212,6 +221,8 @@ async fn main() {
         let delta = real_time - last_real_time;
         //last_real_time = real_time;
 
+        
+
         /* ======== Larry 3D
 
          _   _                            _
@@ -240,7 +251,7 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-
+                three_test::render(grass_test);
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,
@@ -277,12 +288,12 @@ async fn main() {
                |_|
 
                 */
-
+                
         set_default_camera();
         gl_use_material(screen_material);
         draw_texture_ex(
             render_pass_second,
-            0.,
+            520.,
             0., //+ 384.,
             WHITE,
             DrawTextureParams {
