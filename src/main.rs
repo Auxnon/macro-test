@@ -9,30 +9,28 @@ use gltf::scene::Node;
 use gltf::{Document, Gltf, Mesh, Primitive, Scene};
 use itertools::{izip, Itertools};
 
-
 //use gltf_importer::import;
 use macroquad::prelude::*;
-mod three_test;
 mod controls;
 mod ent;
-mod lua_ent;
 mod ent_factory;
 mod global;
 mod image_helper;
 mod layer;
 mod logic;
 mod lua_define;
+mod lua_ent;
 mod menu;
 mod shader_loader;
+mod three_test;
 mod tile;
 
-
 use ent::Ent;
-use lua_ent::LuaEnt;
 use ent_factory::EntFactory;
 use global::Global;
 use layer::Layer;
 use logic::get_logic;
+use lua_ent::LuaEnt;
 use std::collections::HashMap;
 use std::process::exit;
 use tile::Tile;
@@ -74,7 +72,7 @@ async fn main() {
      * Set palette bloom and shading values for our shader
      */
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
-    let grass_test:Texture2D= load_texture("assets/sprites/grass_down.png").await.unwrap();
+    let grass_test: Texture2D = load_texture("assets/sprites/grass_down.png").await.unwrap();
     grass_test.set_filter(FilterMode::Nearest);
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
@@ -214,14 +212,11 @@ async fn main() {
         } else {
             false
         };
-        incr_time += (real_time / 1000.) as f32;
-        if incr_time > 1. {
-            incr_time -= 1.;
-        }
+        incr_time = (real_time / 10.) as f32;
+        incr_time = incr_time % 1.;
+        println!("time {}", incr_time);
         let delta = real_time - last_real_time;
         //last_real_time = real_time;
-
-        
 
         /* ======== Larry 3D
 
@@ -251,7 +246,7 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-                three_test::render(grass_test);
+        three_test::render(incr_time, grass_test);
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,
@@ -288,12 +283,12 @@ async fn main() {
                |_|
 
                 */
-                
+
         set_default_camera();
         gl_use_material(screen_material);
         draw_texture_ex(
             render_pass_second,
-            520.,
+            0.,
             0., //+ 384.,
             WHITE,
             DrawTextureParams {
