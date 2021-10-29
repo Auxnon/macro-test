@@ -50,6 +50,7 @@ fn conf() -> Conf {
 async fn main() {
     // 320 x 192
     //lua_test::test_lua();
+    
 
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
@@ -74,6 +75,9 @@ async fn main() {
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
     let grass_test: Texture2D = load_texture("assets/sprites/grass_down.png").await.unwrap();
     grass_test.set_filter(FilterMode::Nearest);
+
+    let meshes=three_test::init(grass_test);
+
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
         Image::gen_image_color(256, 32, Color::from_rgba(cc[0], cc[1], cc[2], 255));
@@ -112,7 +116,7 @@ async fn main() {
 
     let mut player = ent_factory.create_ent("kiwi");
     player.set_xy(16. * 14., 16. * 6.);
-    layer.add_ent(player);
+    //layer.add_ent(player);
 
     // for i in 0..10 {
     //     let mut player2 = ent_factory.create_ent("kiwi");
@@ -126,7 +130,7 @@ async fn main() {
 
     let mut npc = ent_factory.create_ent("birb-npc");
     npc.set_xy(16. * 12., 16. * 6.);
-    layer.add_ent(npc);
+    //layer.add_ent(npc);
 
     /***
      * END Test Two
@@ -246,7 +250,7 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-        three_test::render(incr_time, grass_test);
+        three_test::render(incr_time, grass_test,&meshes);
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,
