@@ -1,61 +1,67 @@
-
-use mlua::{ UserData, UserDataMethods,UserDataFields};
 use crate::Ent;
+use mlua::{UserData, UserDataFields, UserDataMethods};
 pub struct LuaEnt {
     pub x: f32,
     pub y: f32,
-    pub vel_x:f32,
-    pub vel_y:f32
+    pub z: f32,
+    pub vel_x: f32,
+    pub vel_y: f32,
+    pub vel_z: f32,
 }
 
 impl UserData for LuaEnt {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("get_x", |_,this, ()| 
-            Ok(this.x)
-        );
-        methods.add_method("get_y", |_,this, ()| Ok(this.y));
-        
+        methods.add_method("get_x", |_, this, ()| Ok(this.x));
+        methods.add_method("get_y", |_, this, ()| Ok(this.y));
     }
     fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
         fields.add_field_method_get("x", |_, this| Ok(this.x));
-        fields.add_field_method_set("x", |_, this,x:f32| { Ok(this.x=x)});
-        
+        fields.add_field_method_set("x", |_, this, x: f32| Ok(this.x = x));
+
         fields.add_field_method_get("y", |_, this| Ok(this.y));
-        fields.add_field_method_set("y", |_, this,y:f32| { Ok(this.y=y)});
+        fields.add_field_method_set("y", |_, this, y: f32| Ok(this.y = y));
+        fields.add_field_method_get("z", |_, this| Ok(this.z));
+        fields.add_field_method_set("z", |_, this, z: f32| Ok(this.z = z));
 
         fields.add_field_method_get("vel_x", |_, this| Ok(this.vel_x));
-        fields.add_field_method_set("vel_x", |_, this,vel_x:f32| { Ok(this.vel_x=vel_x)});
+        fields.add_field_method_set("vel_x", |_, this, vel_x: f32| Ok(this.vel_x = vel_x));
         fields.add_field_method_get("vel_y", |_, this| Ok(this.vel_y));
-        fields.add_field_method_set("vel_y", |_, this,vel_y:f32| { Ok(this.vel_y=vel_y)});
+        fields.add_field_method_set("vel_y", |_, this, vel_y: f32| Ok(this.vel_y = vel_y));
+        fields.add_field_method_get("vel_z", |_, this| Ok(this.vel_z));
+        fields.add_field_method_set("vel_z", |_, this, vel_z: f32| Ok(this.vel_z = vel_z));
     }
 }
- // pub fn new() -> LuaEnt {
-    //     return LuaEnt { x: 10., y: 12. };
-    // }
+// pub fn new() -> LuaEnt {
+//     return LuaEnt { x: 10., y: 12. };
+// }
 //methods.add_method("add_x", |_, this, ()| Ok(Self.ent.set_x(10.)));
 
-        // methods.add_meta_function(MetaMethod::Add, |_, (vec1, vec2): (Vec2, Vec2)| {
-        //     Ok(Vec2(vec1.0 + vec2.0, vec1.1 + vec2.1))
-        // });
+// methods.add_meta_function(MetaMethod::Add, |_, (vec1, vec2): (Vec2, Vec2)| {
+//     Ok(Vec2(vec1.0 + vec2.0, vec1.1 + vec2.1))
+// });
 
 impl Clone for LuaEnt {
     fn clone(&self) -> LuaEnt {
         LuaEnt {
             x: self.x,
             y: self.y,
-            vel_x:self.vel_x,
-            vel_y:self.vel_y
+            z: self.z,
+            vel_x: self.vel_x,
+            vel_y: self.vel_y,
+            vel_z: self.vel_z,
         }
     }
 }
 
-impl LuaEnt{
-    fn new(ent:Ent)->LuaEnt{
-        LuaEnt{
-        x: ent.pos.x,
+impl LuaEnt {
+    fn new(ent: Ent) -> LuaEnt {
+        LuaEnt {
+            x: ent.pos.x,
             y: ent.pos.y,
+            z: ent.pos.z,
             vel_x: ent.vel.x,
-            vel_y:ent.vel.y
+            vel_y: ent.vel.y,
+            vel_z: ent.vel.z,
         }
     }
 }

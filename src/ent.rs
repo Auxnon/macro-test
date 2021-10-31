@@ -63,8 +63,10 @@ impl<'b> Ent<'b> {
         let testo = LuaEnt {
             x: self.pos.x,
             y: self.pos.y,
+            z: self.pos.z,
             vel_x: self.vel.x,
             vel_y: self.vel.y,
+            vel_z: self.vel.z,
         };
 
         let res = self.logic_fn.call::<LuaEnt, LuaEnt>((testo));

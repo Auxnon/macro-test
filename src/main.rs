@@ -255,7 +255,7 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-        three_test::render(incr_time, grass_test, guy_test, &meshes);
+        three_test::render(incr_time, grass_test, guy_test, &mut meshes);
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,

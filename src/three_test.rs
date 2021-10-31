@@ -14,7 +14,7 @@ pub struct Ent3 {
 //     //meshes
 // }
 
-pub fn render(tick: f32, texture: Texture2D, texture2: Texture2D, ents: &Vec<Ent>) {
+pub fn render(tick: f32, texture: Texture2D, texture2: Texture2D, ents: &mut Vec<Ent>) {
     // set_camera(&Camera3D {
     //     position: vec3(-20. + (tick) * 40., 15., 0.),
     //     up: vec3(0., 1., 0.),
@@ -55,7 +55,10 @@ pub fn render(tick: f32, texture: Texture2D, texture2: Texture2D, ents: &Vec<Ent
     //draw_sphere(vec3(-8., 0., 0.), 1., None, BLUE);
     let gl = unsafe { get_internal_gl() };
     for ent in ents {
-        gl.quad_gl.push_model_matrix(ent.matrix);
+        ent.run(0.1);
+        let mat2 = Mat4::look_at_lh(vec3(0., 0., 1.), ent.pos, vec3(0., 1., 0.));
+        //mat2.mul_mat4(&ent.matrix);
+        gl.quad_gl.push_model_matrix(mat2);
         for m in &ent.get_schema().mesh {
             draw_mesh(m);
         }

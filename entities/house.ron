@@ -2,6 +2,6 @@
     name: "house",
     resource: "lil-house",
     anims: {"Idle":(0,0)},
-    logic: "walker",
+    logic: "building",
     resource_size: [80,48,80]
 )
