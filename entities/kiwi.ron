@@ -1,7 +1,7 @@
 (
     name: "kiwi",
-    sprite: "sprites/test-kiwi",
+    resource: "sprites/test-kiwi",
     anims: {"Idle":(0,0)},
     logic: "player",
-    sprite_size: (16,16)
+    resource_size: [16,16]
 )

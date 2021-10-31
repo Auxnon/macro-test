@@ -22,6 +22,7 @@ mod lua_define;
 mod lua_ent;
 mod menu;
 mod shader_loader;
+mod three_loader;
 mod three_test;
 mod tile;
 
@@ -50,7 +51,6 @@ fn conf() -> Conf {
 async fn main() {
     // 320 x 192
     //lua_test::test_lua();
-    
 
     let mut ar: [[u8; 20]; 12] = [[0; 20]; 12];
 
@@ -75,8 +75,13 @@ async fn main() {
     let color_img: Image = load_image("assets/colors.png").await.unwrap();
     let grass_test: Texture2D = load_texture("assets/sprites/grass_down.png").await.unwrap();
     grass_test.set_filter(FilterMode::Nearest);
+    let guy_test: Texture2D = load_texture("assets/sprites/guy-test.png").await.unwrap();
+    guy_test.set_filter(FilterMode::Nearest);
 
-    let meshes=three_test::init(grass_test);
+    //let meshes = three_test::init(grass_test, ent_factory);
+    let mut meshes: Vec<Ent> = vec![];
+    let house = ent_factory.create_ent("house");
+    meshes.push(house);
 
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =
@@ -218,7 +223,7 @@ async fn main() {
         };
         incr_time = (real_time / 10.) as f32;
         incr_time = incr_time % 1.;
-        println!("time {}", incr_time);
+
         let delta = real_time - last_real_time;
         //last_real_time = real_time;
 
@@ -250,7 +255,7 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-        three_test::render(incr_time, grass_test,&meshes);
+        three_test::render(incr_time, grass_test, guy_test, &meshes);
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,

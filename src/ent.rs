@@ -1,12 +1,11 @@
-
 use crate::ent_factory::EntSchema;
+use crate::LuaEnt;
 use macroquad::prelude::*;
 use mlua::Function;
-use crate::LuaEnt;
 pub struct Ent<'b> {
     schema: &'b EntSchema,
-    pub pos: Vec2,
-    pub vel: Vec2,
+    pub pos: Vec3,
+    pub vel: Vec3,
     anim_index: u16,
     face_right: bool,
     logic: String, //can be empty, intended to override the entity schema for more variety, defaults to schema
@@ -16,26 +15,32 @@ pub struct Ent<'b> {
     pub edge_right: bool,
     pub primed: bool,
     pub logic_fn: mlua::Function<'b>, //fn(&mut Self, f32),
-    pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensive
+    flat: bool,                       //2D or 3D
+    pub matrix: Mat4,
+    //pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensive
 }
 
-
 impl<'b> Ent<'b> {
-    pub fn new(schema: &'b EntSchema,fuc:Function<'b> ) -> Ent<'b> {
-    Ent {
-        schema,
-        pos: Vec2::new(0., 0.),
-        vel: Vec2::new(0., 0.),
-        anim_index: 0,
-        face_right: false,
-        evaluate: false,
-        grounded: false,
-        primed: false,
-        edge_left: false,
-        edge_right: false,
-        logic: String::new(),
-        logic_fn: fuc,
-    }}
+    pub fn new(schema: &'b EntSchema, fuc: Function<'b>) -> Ent<'b> {
+        let r = rand::gen_range(0., 1.);
+        let mat = glam::Mat4::from_axis_angle(Vec3::new(0., 1., 0.), r * std::f32::consts::PI * 2.);
+        Ent {
+            schema,
+            pos: Vec3::new(0., 0., 0.),
+            vel: Vec3::new(0., 0., 0.),
+            anim_index: 0,
+            face_right: false,
+            //evaluate: false,
+            grounded: false,
+            primed: false,
+            edge_left: false,
+            edge_right: false,
+            logic: String::new(),
+            logic_fn: fuc,
+            flat: true,
+            matrix: mat,
+        }
+    }
     pub fn set_x(&mut self, x: f32) {
         self.pos.x = x;
     }
@@ -59,9 +64,8 @@ impl<'b> Ent<'b> {
             x: self.pos.x,
             y: self.pos.y,
             vel_x: self.vel.x,
-            vel_y:self.vel.y
+            vel_y: self.vel.y,
         };
-
 
         let res = self.logic_fn.call::<LuaEnt, LuaEnt>((testo));
         if res.is_err() {
@@ -86,10 +90,10 @@ impl<'b> Ent<'b> {
         self.schema
     }
     pub fn get_width(&self) -> f32 {
-        self.schema.sprite_size.0 as f32
+        self.schema.resource_size[0] as f32
     }
     pub fn get_height(&self) -> f32 {
-        self.schema.sprite_size.1 as f32
+        self.schema.resource_size[1] as f32
     }
     fn get_anim(&mut self, animation: String) -> (u16, u16) {
         self.schema.get_anim(animation)
@@ -135,10 +139,10 @@ impl<'b> Ent<'b> {
             WHITE,
             DrawTextureParams {
                 source: Some(Rect::new(
-                    (self.anim_index * self.schema.sprite_size.0) as f32,
+                    (self.anim_index * self.schema.resource_size[0]) as f32,
                     0.,
-                    self.schema.sprite_size.0.into(),
-                    self.schema.sprite_size.1.into(),
+                    self.schema.resource_size[0].into(),
+                    self.schema.resource_size[1].into(),
                 )),
                 flip_x: self.face_right,
                 ..Default::default()

@@ -1,7 +1,7 @@
 (
     name: "birb-npc",
-    sprite: "sprites/fatty",
+    resource: "sprites/fatty",
     anims: {"Idle":(0,0)},
     logic: "walker",
-    sprite_size: (32,32)
+    resource_size: [32,32]
 )

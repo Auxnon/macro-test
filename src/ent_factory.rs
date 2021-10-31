@@ -1,32 +1,36 @@
-
+use crate::Ent;
+use crate::{lua_define::LuaCore, three_loader};
+use gltf::Texture;
 use macroquad::prelude::*;
+use ron::de::from_reader;
+use serde::Deserialize;
 use std::{
     collections::HashMap,
     fs::{read_dir, File},
-    path::{Path, PathBuf}};
-use serde::Deserialize;
-use crate::lua_define::LuaCore;
-use ron::de::from_reader;
-use crate::Ent;
+    path::{Path, PathBuf},
+};
 
 #[derive(Default, Debug, Deserialize)]
 pub struct PreEntSchema {
     name: String,
-    sprite: String,
+    resource: String,
     #[serde(default)]
     anims: HashMap<String, (u16, u16)>,
-    sprite_size: (u16, u16),
+    #[serde(default)]
+    resource_size: Vec<u16>,
     logic: String,
 }
-#[derive(Debug)]
+
 pub struct EntSchema {
     pub name: String,
-    pub sprite: String,
+    pub resource: String,
     pub albedo: Texture2D,
     pub normals: Texture2D,
+    pub mesh: Vec<Mesh>,
     pub anims: HashMap<String, (u16, u16)>,
-    pub sprite_size: (u16, u16),
+    pub resource_size: Vec<u16>,
     pub logic: String,
+    pub flat: bool,
 }
 impl EntSchema {
     pub fn get_anim(&self, name: String) -> (u16, u16) {
@@ -66,35 +70,68 @@ impl<'a> EntFactory<'a> {
                     PreEntSchema::default()
                 }
             };
-            let text = format!("assets/{}.png", schema.sprite);
-            let ntext = format!("assets/{}_n.png", schema.sprite);
-            //println!("loaded texture {}", text);
-            let albedo = load_texture(&text[..]).await.unwrap_or(Texture2D::empty());
-            //println!(" texture width {}", albedo.width());
-            let normals = load_texture(&ntext[..]).await.unwrap_or(Texture2D::empty());
+            let mut ent;
 
-            normals.set_filter(FilterMode::Nearest);
-            albedo.set_filter(FilterMode::Nearest);
-            let ent = EntSchema {
-                name: schema.name,
-                anims: schema.anims,
-                sprite: schema.sprite,
-                albedo,
-                normals,
-                logic: schema.logic,
-                sprite_size: schema.sprite_size,
-            };
+            if (schema.resource_size.len() > 2) {
+                //then it's a 3d resource!
+                let text = format!("assets/{}.glb", schema.resource);
+                let mesh = three_loader::load(&text);
+
+                ent = EntSchema {
+                    name: schema.name,
+                    anims: schema.anims,
+                    resource: schema.resource,
+                    albedo: Texture2D::empty(),
+                    normals: Texture2D::empty(),
+                    mesh,
+                    logic: schema.logic,
+                    resource_size: schema.resource_size,
+                    flat: true,
+                };
+            } else {
+                let text = format!("assets/{}.png", schema.resource);
+                let ntext = format!("assets/{}_n.png", schema.resource);
+                //println!("loaded texture {}", text);
+                let albedo = load_texture(&text[..]).await.unwrap_or(Texture2D::empty());
+                //println!(" texture width {}", albedo.width());
+                let normals = load_texture(&ntext[..]).await.unwrap_or(Texture2D::empty());
+                let mesh = vec![Mesh {
+                    vertices: [].to_vec(),
+                    indices: [].to_vec(),
+                    texture: Some(Texture2D::empty()),
+                }];
+                normals.set_filter(FilterMode::Nearest);
+                albedo.set_filter(FilterMode::Nearest);
+                ent = EntSchema {
+                    name: schema.name,
+                    anims: schema.anims,
+                    resource: schema.resource,
+                    albedo,
+                    normals,
+                    mesh,
+                    logic: schema.logic,
+                    resource_size: schema.resource_size,
+                    flat: true,
+                };
+            }
+
             println!("loaded entity as {}", ent.name);
             ent_map.insert(ent.name.to_owned(), ent);
         }
         let default_ent_schema = EntSchema {
             name: String::from("NA"),
             anims: HashMap::new(),
-            sprite: String::from("none"),
+            resource: String::from("none"),
             albedo: Texture2D::empty(),
             normals: Texture2D::empty(),
-            sprite_size: (32, 32),
+            mesh: vec![Mesh {
+                vertices: [].to_vec(),
+                indices: [].to_vec(),
+                texture: Some(Texture2D::empty()),
+            }],
+            resource_size: [32, 32, 0].to_vec(),
             logic: "".to_string(),
+            flat: false,
         };
         EntFactory {
             ent_map,
@@ -116,7 +153,7 @@ impl<'a> EntFactory<'a> {
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
         let fuc = self.lua_core.get(sc.logic.clone());
         println!("::ent:: we loaded func for {}", sc.logic.clone());
-        Ent::new(sc,fuc)
+        Ent::new(sc, fuc)
         // Ent {
         //     schema: sc,
         //     pos: Vec2::new(0., 0.),
