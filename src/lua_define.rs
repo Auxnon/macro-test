@@ -1,6 +1,5 @@
-
-use mlua::{Function, Lua, UserData, UserDataMethods};
 use crate::LuaEnt;
+use mlua::{Function, Lua, UserData, UserDataMethods};
 use std::{collections::HashMap, fs, path::Path};
 
 pub struct LuaCore<'a> {

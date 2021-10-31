@@ -23,7 +23,7 @@ pub fn render(tick: f32, texture: Texture2D, texture2: Texture2D, ents: &mut Vec
     //     ..Default::default()
     // });
     let r = (tick * 2.) % std::f32::consts::PI;
-    let d = 2.;
+    let d = 3.;
     let x = r.cos() * d;
     let y = r.sin() * d;
     set_camera(&Camera3D {
@@ -41,7 +41,7 @@ pub fn render(tick: f32, texture: Texture2D, texture2: Texture2D, ents: &mut Vec
 
     draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), DARKGREEN);
     draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), DARKBLUE);
-    draw_cube_wires(vec3(2., 1., 2.), vec3(2., 2.1, 2.), YELLOW);
+    //draw_cube_wires(vec3(2., 1., 2.), vec3(2., 2.1, 2.), YELLOW);
 
     unsafe {
         macroquad::window::get_internal_gl()
