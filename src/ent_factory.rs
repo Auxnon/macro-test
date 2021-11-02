@@ -86,7 +86,7 @@ impl<'a> EntFactory<'a> {
                     mesh,
                     logic: schema.logic,
                     resource_size: schema.resource_size,
-                    flat: true,
+                    flat: false,
                 };
             } else {
                 let text = format!("assets/{}.png", schema.resource);

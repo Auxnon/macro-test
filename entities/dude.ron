@@ -1,0 +1,7 @@
+(
+    name: "dude",
+    resource: "sprites/chicken",
+    anims: {"Idle":(0,0)},
+    logic: "player",
+    resource_size: [16,16]
+)

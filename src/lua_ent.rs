@@ -1,9 +1,13 @@
 use crate::Ent;
+use macroquad::prelude::*;
 use mlua::{UserData, UserDataFields, UserDataMethods};
 pub struct LuaEnt {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+    pub rot_x: f32,
+    pub rot_y: f32,
+    pub rot_z: f32,
     pub vel_x: f32,
     pub vel_y: f32,
     pub vel_z: f32,
@@ -20,8 +24,17 @@ impl UserData for LuaEnt {
 
         fields.add_field_method_get("y", |_, this| Ok(this.y));
         fields.add_field_method_set("y", |_, this, y: f32| Ok(this.y = y));
+
         fields.add_field_method_get("z", |_, this| Ok(this.z));
         fields.add_field_method_set("z", |_, this, z: f32| Ok(this.z = z));
+
+        fields.add_field_method_get("rot_x", |_, this| Ok(this.rot_x));
+        fields.add_field_method_get("rot_y", |_, this| Ok(this.rot_y));
+        fields.add_field_method_get("rot_z", |_, this| Ok(this.rot_z));
+
+        fields.add_field_method_set("rot_z", |_, this, rot_z: f32| Ok(this.rot_z = rot_z));
+        fields.add_field_method_set("rot_y", |_, this, rot_y: f32| Ok(this.rot_y = rot_y));
+        fields.add_field_method_set("rot_x", |_, this, rot_x: f32| Ok(this.rot_x = rot_x));
 
         fields.add_field_method_get("vel_x", |_, this| Ok(this.vel_x));
         fields.add_field_method_set("vel_x", |_, this, vel_x: f32| Ok(this.vel_x = vel_x));
@@ -49,6 +62,9 @@ impl Clone for LuaEnt {
             vel_x: self.vel_x,
             vel_y: self.vel_y,
             vel_z: self.vel_z,
+            rot_x: self.rot_x,
+            rot_y: self.rot_y,
+            rot_z: self.rot_z,
         }
     }
 }
@@ -62,6 +78,9 @@ impl LuaEnt {
             vel_x: ent.vel.x,
             vel_y: ent.vel.y,
             vel_z: ent.vel.z,
+            rot_x: ent.rot.x,
+            rot_y: ent.rot.y,
+            rot_z: ent.rot.z,
         }
     }
 }

@@ -82,6 +82,12 @@ async fn main() {
     let mut meshes: Vec<Ent> = vec![];
     let house = ent_factory.create_ent("house");
     meshes.push(house);
+    for i in 1..30 {
+        let mut dude = ent_factory.create_ent("dude");
+        dude.pos.x = rand::gen_range(-2., 2.);
+        dude.pos.z = rand::gen_range(-2., 2.);
+        meshes.push(dude);
+    }
 
     let cc = color_img.get_image_data()[((5) as usize)]; //value
     let mut lookup_image =

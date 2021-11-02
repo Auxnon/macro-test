@@ -6,6 +6,7 @@ pub struct Ent<'b> {
     schema: &'b EntSchema,
     pub pos: Vec3,
     pub vel: Vec3,
+    pub rot: Vec3,
     anim_index: u16,
     face_right: bool,
     logic: String, //can be empty, intended to override the entity schema for more variety, defaults to schema
@@ -28,6 +29,7 @@ impl<'b> Ent<'b> {
             schema,
             pos: Vec3::new(0., 0., 0.),
             vel: Vec3::new(0., 0., 0.),
+            rot: Vec3::new(0., 0., 0.),
             anim_index: 0,
             face_right: false,
             //evaluate: false,
@@ -67,6 +69,10 @@ impl<'b> Ent<'b> {
             vel_x: self.vel.x,
             vel_y: self.vel.y,
             vel_z: self.vel.z,
+
+            rot_x: self.rot.x,
+            rot_y: self.rot.y,
+            rot_z: self.rot.z,
         };
 
         let res = self.logic_fn.call::<LuaEnt, LuaEnt>((testo));
@@ -78,8 +84,21 @@ impl<'b> Ent<'b> {
         let ent = res.unwrap();
         println!("got back {} and {}", ent.x, ent.y);
         self.pos.x = ent.x;
-
         self.pos.y = ent.y;
+        self.pos.z = ent.z;
+
+        self.vel.x = ent.vel_x;
+        self.vel.y = ent.vel_y;
+        self.vel.z = ent.vel_z;
+
+        self.rot.x = ent.rot_x;
+        self.rot.y = ent.rot_y;
+        self.rot.z = ent.rot_z;
+        let quat = Quat::from_rotation_ypr(self.rot.y, self.rot.x, self.rot.z);
+        self.matrix = Mat4::from_rotation_translation(quat, self.pos);
+
+        //self.matrix = Mat4::from_translation(self.pos);
+        //println!("matrix {}", self.matrix);
     }
 
     pub fn get_x(&self) -> f32 {
@@ -99,6 +118,9 @@ impl<'b> Ent<'b> {
     }
     fn get_anim(&mut self, animation: String) -> (u16, u16) {
         self.schema.get_anim(animation)
+    }
+    pub fn is_flat(&self) -> bool {
+        self.schema.flat
     }
     pub fn anim(&mut self, animation: String) {
         let inds = self.schema.get_anim(animation);
