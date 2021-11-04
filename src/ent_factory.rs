@@ -139,13 +139,16 @@ impl<'a> EntFactory<'a> {
             lua_core: LuaCore::new(),
         }
     }
+    pub fn get_schema(&self, schema: &str) -> &EntSchema {
+        match self.ent_map.get(schema) {
+            Some(o) => o,
+            None => &self.default_ent_schema,
+        }
+    }
     pub fn create_ent(&self, schema: &str) -> Ent {
         //.or_insert(EntSchema::default());
 
-        let sc = match self.ent_map.get(schema) {
-            Some(o) => o,
-            None => &self.default_ent_schema,
-        };
+        let sc = self.get_schema(schema);
         //(self.default_ent_schema);
         //fn basic(ent: &mut Ent) {}
         //let f = get_logic("player".to_owned());

@@ -1,0 +1,7 @@
+
+(
+    name: "axe",
+    resource: "sprites/axe",
+    anims: {"Idle":(0,0)},
+    logic: "item"
+)

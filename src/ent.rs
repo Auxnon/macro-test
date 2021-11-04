@@ -18,6 +18,7 @@ pub struct Ent<'b> {
     pub logic_fn: mlua::Function<'b>, //fn(&mut Self, f32),
     flat: bool,                       //2D or 3D
     pub matrix: Mat4,
+    pub accessory: Option<&'b EntSchema>,
     //pub evaluate: bool, //whether to apraise a dynamic change, currently just logic code, could be expensive
 }
 
@@ -41,6 +42,7 @@ impl<'b> Ent<'b> {
             logic_fn: fuc,
             flat: true,
             matrix: mat,
+            accessory: None,
         }
     }
     pub fn set_x(&mut self, x: f32) {
@@ -82,7 +84,7 @@ impl<'b> Ent<'b> {
         }
 
         let ent = res.unwrap();
-        println!("got back {} and {}", ent.x, ent.y);
+        // println!("got back {} and {}", ent.x, ent.y);
         self.pos.x = ent.x;
         self.pos.y = ent.y;
         self.pos.z = ent.z;
@@ -129,48 +131,63 @@ impl<'b> Ent<'b> {
             self.anim_index = inds.0;
         }
     }
-    pub fn draw(&mut self, delta: f32, tick: bool, normal: bool) {
-        //for i in 0..array.len() {
-        //let dir = array[i].2;
-        // if self.schema.logic.chars().count() <= 0 {
-        //     self.pos.x += if self.face_right {
-        //         2. * delta
-        //     } else {
-        //         -2. * delta
-        //     };
-        // }
+
+    pub fn draw(&mut self, delta: f32, tick: bool, normal: bool, dimensional: bool) {
         let x = self.pos.x;
         let y = self.pos.y;
 
-        if x > 320. {
-            self.face_right = !self.face_right;
-        } else if x < 0. {
-            self.face_right = !self.face_right;
-        }
-        if normal && tick {
+        //if normal && tick {}
+        if tick {
             self.anim("Idle".to_owned());
         }
-        // let max = (birb.width() / birb.height()) as u8;
-        // println!("anim {:?}", self.schema.sprite_size);
-        draw_texture_ex(
-            if normal {
-                self.schema.normals
+
+        if dimensional {
+            if self.schema.flat {
+                draw_plane(
+                    vec3(0., -0.25, 0.), //1. + 1. / 4., 0., -1. / 4.),
+                    vec2(1. / 4., 1. / 4.),
+                    self.schema.albedo,
+                    WHITE,
+                );
+                match self.accessory {
+                    Some(ac) => {
+                        let ar = std::f32::consts::PI * 2. * (self.anim_index as f32 / 5.);
+                        //println!("index {}", self.anim_index);
+                        draw_plane(
+                            vec3(-0.4 + ar.cos() * 0.2, -0.26, ar.sin() * 0.2), //1. + 1. / 4., 0., -1. / 4.),
+                            vec2(1. / 4., 1. / 4.),
+                            ac.albedo,
+                            WHITE,
+                        );
+                    }
+                    None => {}
+                }
             } else {
-                self.schema.albedo
-            }, //if dir {birb_n} else {birb_nf},
-            (self.pos.x as f32).floor(), // - self.schema.sprite_size.0
-            (self.pos.y).floor(),        //+ 384., //- self.schema.sprite_size.1 as f32
-            WHITE,
-            DrawTextureParams {
-                source: Some(Rect::new(
-                    (self.anim_index * self.schema.resource_size[0]) as f32,
-                    0.,
-                    self.schema.resource_size[0].into(),
-                    self.schema.resource_size[1].into(),
-                )),
-                flip_x: self.face_right,
-                ..Default::default()
-            },
-        );
+                for m in &self.schema.mesh {
+                    draw_mesh(m);
+                }
+            }
+        } else {
+            draw_texture_ex(
+                if normal {
+                    self.schema.normals
+                } else {
+                    self.schema.albedo
+                }, //if dir {birb_n} else {birb_nf},
+                (self.pos.x as f32).floor(), // - self.schema.sprite_size.0
+                (self.pos.y).floor(),        //+ 384., //- self.schema.sprite_size.1 as f32
+                WHITE,
+                DrawTextureParams {
+                    source: Some(Rect::new(
+                        (self.anim_index * self.schema.resource_size[0]) as f32,
+                        0.,
+                        self.schema.resource_size[0].into(),
+                        self.schema.resource_size[1].into(),
+                    )),
+                    flip_x: self.face_right,
+                    ..Default::default()
+                },
+            );
+        }
     }
 }

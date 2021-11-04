@@ -60,7 +60,7 @@ impl<'a> Layer<'a> {
             t.draw(self.x, self.y);
         }
         for e in self.ents.iter_mut() {
-            e.draw(delta, tick, false);
+            e.draw(delta, tick, false, false);
         }
     }
     pub fn draw_normals(&mut self, delta: f32, tick: bool) {
@@ -68,7 +68,7 @@ impl<'a> Layer<'a> {
             t.draw_normals(self.x, self.y);
         }
         for e in self.ents.iter_mut() {
-            e.draw(delta, tick, true);
+            e.draw(delta, tick, true, false);
         }
     }
     pub fn get_x(&self) -> f32 {

@@ -82,8 +82,9 @@ async fn main() {
     let mut meshes: Vec<Ent> = vec![];
     let house = ent_factory.create_ent("house");
     meshes.push(house);
-    for i in 1..30 {
+    for i in 1..6 {
         let mut dude = ent_factory.create_ent("dude");
+        dude.accessory = Some(ent_factory.get_schema("axe"));
         dude.pos.x = rand::gen_range(-2., 2.);
         dude.pos.z = rand::gen_range(-2., 2.);
         meshes.push(dude);
@@ -222,7 +223,8 @@ async fn main() {
 
         let real_time = get_time();
 
-        let tick = if real_time > last_step_time + 0.25 {
+        let tick = if real_time > last_step_time + 0.1 {
+            last_step_time = real_time;
             true
         } else {
             false
@@ -261,7 +263,15 @@ async fn main() {
         /_/    \_\_|_.__/ \___|\__,_|\___/
 
                 =========*/
-        three_test::render(incr_time, grass_test, guy_test, &mut meshes);
+        //incr_time
+        three_test::render(
+            delta as f32,
+            incr_time,
+            grass_test,
+            guy_test,
+            &mut meshes,
+            tick,
+        );
         layer.draw(delta as f32, tick);
         // draw_texture_ex(
         //     test_image,
