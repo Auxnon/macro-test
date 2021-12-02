@@ -41,14 +41,13 @@ impl EntSchema {
     }
 }
 
-pub struct EntFactory<'a> {
+pub struct EntFactory {
     ent_map: HashMap<String, EntSchema>,
     default_ent_schema: EntSchema,
-    lua_core: LuaCore<'a>,
 }
 
-impl<'a> EntFactory<'a> {
-    pub async fn new() -> EntFactory<'a> {
+impl<'a> EntFactory {
+    pub async fn new() -> EntFactory {
         let input_path = Path::new(".").join("entities");
         //let input_path = format!("{}/entities/", env!("CARGO_MANIFEST_DIR"));
         let mut ent_map = HashMap::new();
@@ -136,16 +135,19 @@ impl<'a> EntFactory<'a> {
         EntFactory {
             ent_map,
             default_ent_schema,
-            lua_core: LuaCore::new(),
+            //lua_core: LuaCore::new(self),
         }
     }
+    // pub fn create_empty_ent(&self) {
+    //     Ent::default(self.default_ent_schema, mlua::Function::clone(&self))
+    // }
     pub fn get_schema(&self, schema: &str) -> &EntSchema {
         match self.ent_map.get(schema) {
             Some(o) => o,
             None => &self.default_ent_schema,
         }
     }
-    pub fn create_ent(&self, schema: &str) -> Ent {
+    pub fn create_ent(&'a self, schema: &String, lua_core: &'a LuaCore) -> Ent<'a> {
         //.or_insert(EntSchema::default());
 
         let sc = self.get_schema(schema);
@@ -154,7 +156,7 @@ impl<'a> EntFactory<'a> {
         //let f = get_logic("player".to_owned());
         //let r = rand::gen_range(0, 2);
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
-        let fuc = self.lua_core.get(sc.logic.clone());
+        let fuc = lua_core.get(sc.logic.clone());
         println!("::ent:: we loaded func for {}", sc.logic.clone());
         Ent::new(sc, fuc)
         // Ent {
@@ -171,5 +173,8 @@ impl<'a> EntFactory<'a> {
         //     logic: String::new(),
         //     logic_fn: fuc,
         // }
+    }
+    pub fn test(&self) -> u32 {
+        0
     }
 }

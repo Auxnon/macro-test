@@ -313,6 +313,7 @@ dependencies = [
  "macroquad",
  "miniquad",
  "mlua",
+ "once_cell",
  "rand",
  "ron",
  "serde",

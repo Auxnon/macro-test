@@ -6,7 +6,7 @@ pub struct Layer<'a> {
     x: f32,
     y: f32,
     scale: f32,
-    tiles: Vec<TileBlock>,
+    tiles: Vec<TileBlock<'a>>,
     ents: Vec<Ent<'a>>,
 }
 
@@ -46,7 +46,7 @@ impl<'a> Layer<'a> {
             }
         }
     }
-    pub fn add_tile(&mut self, mut tile: TileBlock) {
+    pub fn add_tile(&mut self, mut tile: TileBlock<'a>) {
         self.tiles.push(tile);
     }
     pub fn remove_tile(&mut self, index: usize) {
@@ -62,6 +62,14 @@ impl<'a> Layer<'a> {
         for e in self.ents.iter_mut() {
             e.draw(delta, tick, false, false);
         }
+    }
+    pub fn draw3(&mut self, delta: f32, tick: bool) {
+        for t in self.tiles.iter_mut() {
+            t.draw3(self.x, self.y, 0.);
+        }
+        // for e in self.ents.iter_mut() {
+        //     e.draw(delta, tick, false, false);
+        // }
     }
     pub fn draw_normals(&mut self, delta: f32, tick: bool) {
         for t in self.tiles.iter_mut() {

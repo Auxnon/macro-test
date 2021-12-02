@@ -1,0 +1,6 @@
+(
+    name: "maker",
+    anims: {"Idle":(0,0)},
+    resource: "maker",
+    logic: "maker"
+)

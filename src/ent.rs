@@ -45,13 +45,36 @@ impl<'b> Ent<'b> {
             accessory: None,
         }
     }
+    pub fn default(schema: &'b EntSchema, fuc: Function<'b>) -> Ent<'b> {
+        Ent {
+            schema,
+            pos: Vec3::new(0., 0., 0.),
+            vel: Vec3::new(0., 0., 0.),
+            rot: Vec3::new(0., 0., 0.),
+            anim_index: 0,
+            face_right: false,
+            //evaluate: false,
+            grounded: false,
+            primed: false,
+            edge_left: false,
+            edge_right: false,
+            logic: String::new(),
+            logic_fn: fuc,
+            flat: true,
+            matrix: glam::Mat4::IDENTITY,
+            accessory: None,
+        }
+    }
+
     pub fn set_x(&mut self, x: f32) {
         self.pos.x = x;
     }
+
     pub fn set_xy(&mut self, x: f32, y: f32) {
         self.pos.x = x;
         self.pos.y = y;
     }
+
     /* pub fn get_logic(&self) -> String {
         if self.logic.len() == 0 {
             self.schema.logic
@@ -61,10 +84,8 @@ impl<'b> Ent<'b> {
     }*/
     pub fn set_logic() {}
 
-    pub fn run(&mut self, delta: f32) {
-        //(self.logic_fn)(self, delta);
-
-        let testo = LuaEnt {
+    pub fn to_lua(&self) -> LuaEnt {
+        LuaEnt {
             x: self.pos.x,
             y: self.pos.y,
             z: self.pos.z,
@@ -75,9 +96,13 @@ impl<'b> Ent<'b> {
             rot_x: self.rot.x,
             rot_y: self.rot.y,
             rot_z: self.rot.z,
-        };
+        }
+    }
 
-        let res = self.logic_fn.call::<LuaEnt, LuaEnt>((testo));
+    pub fn run(&mut self, delta: f32) {
+        //(self.logic_fn)(self, delta);
+        let testo = self.to_lua();
+        let res = self.logic_fn.call::<LuaEnt, LuaEnt>(testo);
         if res.is_err() {
             println!("bad return! 📜{} {:#?}", self.get_schema().logic, res.err());
             return;
@@ -106,24 +131,31 @@ impl<'b> Ent<'b> {
     pub fn get_x(&self) -> f32 {
         self.pos.x
     }
+
     pub fn get_name(&self) -> String {
         self.schema.name.to_owned()
     }
+
     pub fn get_schema(&self) -> &EntSchema {
         self.schema
     }
+
     pub fn get_width(&self) -> f32 {
         self.schema.resource_size[0] as f32
     }
+
     pub fn get_height(&self) -> f32 {
         self.schema.resource_size[1] as f32
     }
+
     fn get_anim(&mut self, animation: String) -> (u16, u16) {
         self.schema.get_anim(animation)
     }
+
     pub fn is_flat(&self) -> bool {
         self.schema.flat
     }
+
     pub fn anim(&mut self, animation: String) {
         let inds = self.schema.get_anim(animation);
         self.anim_index += 1;

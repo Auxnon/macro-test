@@ -1,6 +1,8 @@
+use std::{cell::RefCell, iter::Map, rc::Rc, sync::Mutex};
+
 use macroquad::prelude::*;
 
-use crate::ent::Ent;
+use crate::{ent::Ent, global::Global, layer::Layer};
 
 pub struct Ent3 {
     mesh: macroquad::models::Mesh,
@@ -20,9 +22,11 @@ pub fn render(
     incr_time: f32,
     texture: Texture2D,
     texture2: Texture2D,
-    ents: &mut Vec<Ent>,
+    ents: Rc<RefCell<Vec<Ent>>>,
     tick: bool,
-) {
+    layer: &mut Layer,
+    globals: &mut Global,
+) -> Mat4 {
     // set_camera(&Camera3D {
     //     position: vec3(-20. + (tick) * 40., 15., 0.),
     //     up: vec3(0., 1., 0.),
@@ -45,10 +49,10 @@ pub fn render(
     let matrix = camera.matrix().clone();
     set_camera(camera);
 
-    let size = Vec3::new(10., 10., 10.);
+    //let size = Vec3::new(10., 10., 10.);
     //draw_cube(Vec3::new(0., 0., 0.), size, texture, RED);
 
-    draw_grid(20, 1., BLACK, GRAY);
+    //draw_grid(20, 1., BLACK, GRAY);
 
     draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), DARKGREEN);
     draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), DARKBLUE);
@@ -62,12 +66,15 @@ pub fn render(
         draw_plane(vec3(2., 0., -2.), vec2(2., 2.), texture, WHITE);
         draw_cube(vec3(-5., 1., -2.), vec3(2., 2., 2.), texture, WHITE);
     }
+    layer.draw3(delta, tick);
     let gl = unsafe { get_internal_gl() };
 
     let (scale, quat, trans) = matrix.inverse().to_scale_rotation_translation();
     let mut standing_matrix = Mat4::from_axis_angle(vec3(1., 0., 0.), std::f32::consts::PI * 0.5);
 
-    for ent in ents {
+    let mut ee = ents.borrow_mut();
+    let meshes = ee.iter_mut();
+    for ent in meshes {
         ent.run(delta);
         if ent.is_flat() {
             let rot_matrix = Mat4::from_rotation_translation(quat, ent.pos);
@@ -89,4 +96,5 @@ pub fn render(
     });
 
     set_default_camera();
+    return matrix;
 }

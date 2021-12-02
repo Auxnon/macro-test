@@ -1,30 +1,28 @@
-use crate::LuaEnt;
-use mlua::{Function, Lua, UserData, UserDataMethods};
-use std::{collections::HashMap, fs, path::Path};
+use crate::{
+    ent::{self, Ent},
+    ent_factory::{self, EntFactory},
+    LuaEnt,
+};
+use mlua::{Function, Lua, Scope, UserData, UserDataMethods};
+use once_cell::sync::OnceCell;
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fs,
+    path::Path,
+    process::exit,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 pub struct LuaCore<'a> {
-    lua: mlua::Lua,
+    pub lua: mlua::Lua,
     map: HashMap<String, Function<'a>>,
 }
 
-impl<'a> LuaCore<'a> {
+impl<'a, 'scope> LuaCore<'a> {
     pub fn new() -> LuaCore<'a> {
-        //let map = HashMap::new();
         let lua = Lua::new();
-        let globals = lua.globals();
-
-        let multi = lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
-        globals.set("multi", multi.unwrap());
-
-        // let make_ent = lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaEnt { x, y }));
-        // globals.set("make_ent", make_ent.unwrap());
-
-        // let default_func = lua
-        //     .create_function(|_, e: crate::entity::LuaEnt| Ok(e))
-        //     .unwrap();
-        let default_func = lua.create_function(|_, e: f32| Ok(e)).unwrap();
-        globals.set("default_func", default_func);
-        drop(globals);
 
         LuaCore {
             lua,
@@ -32,6 +30,45 @@ impl<'a> LuaCore<'a> {
         }
     }
 
+    pub fn init(
+        &'a self,
+        scope: &'a Scope<'a, 'scope>,
+        entity_factory: &'a EntFactory,
+        meshes: Rc<RefCell<Vec<Ent<'a>>>>,
+    ) -> &Scope<'a, 'scope> {
+        let globals = self.lua.globals();
+
+        let multi = self.lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
+        // let t = multi.unwrap();
+        globals.set("multi", multi.unwrap());
+
+        // let closure = |_, (str, x, y): (String, f32, f32)| {
+        //     let mut ent = entity_factory.create_ent(&str, self);
+        //     ent.pos.x = x;
+        //     ent.pos.y = y;
+        //     let lua_ent = ent.to_lua();
+        //     let mut m = meshes.borrow_mut();
+        //     m.push(ent);
+        //     println!("added ent, now sized at {}", m.len());
+        //     Ok(lua_ent)
+        //     //Ok(&ent.to_lua())
+        // };
+
+        // globals.set("spawn", {
+        //     let m = scope.create_function(closure);
+        //     m.unwrap()
+        // });
+
+        let default_func = self.lua.create_function(|_, e: f32| Ok(e)).unwrap();
+        globals.set("default_func", default_func);
+        drop(globals);
+        scope
+    }
+
+    pub fn test(&self) {}
+    pub fn spawn(&'a self, str: &String) {
+        //entity_factory.create_ent(str, self);
+    }
     pub fn load(&self, str: String) {
         let input_path = Path::new(".")
             .join("scripts")
@@ -106,4 +143,34 @@ impl<'a> LuaCore<'a> {
     // }
 
     //pub fn entity_run(ent: &mut Ent, delta: f32) {}
+}
+
+pub fn scope_test<'b, 'scope>(
+    scope: &Scope<'scope, 'b>,
+    ent_factory: &'b EntFactory,
+    lua_core: &'b LuaCore,
+    meshes: Rc<RefCell<Vec<Ent<'b>>>>,
+) {
+    let closure = move |_, (str, x, y): (String, f32, f32)| {
+        let mut ent = ent_factory.create_ent(&str, &lua_core);
+        ent.pos.x = x;
+        ent.pos.y = y;
+        let lua_ent = ent.to_lua();
+        let res = meshes.try_borrow_mut();
+        if res.is_ok() {
+            let mut m = res.unwrap();
+            m.push(ent);
+            println!("added ent, now sized at {}", m.len());
+        } else {
+            println!("cannot add ent, overworked!")
+        }
+        Ok(lua_ent)
+        //Ok(&ent.to_lua())
+    };
+
+    let lua_globals = lua_core.lua.globals();
+    lua_globals.set("spawn", {
+        let m = scope.create_function(closure);
+        m.unwrap()
+    });
 }

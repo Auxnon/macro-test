@@ -1,5 +1,6 @@
 use crate::Ent;
 use macroquad::prelude::*;
+
 use mlua::{UserData, UserDataFields, UserDataMethods};
 pub struct LuaEnt {
     pub x: f32,

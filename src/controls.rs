@@ -8,12 +8,30 @@ mod menu;
 static SPEED: f32 = 40.;
 static JUMP_SPEED: f32 = 300.;
 
-pub fn cycle(globals: &mut Global) {
+pub fn cycle(globals: &mut Global) -> &mut Global {
     if is_key_pressed(KeyCode::GraveAccent) {
         globals.DEVELOPER_MODE = !globals.DEVELOPER_MODE;
     }
+    let mut xx = 0.;
+    let mut yy = 0.;
+
+    if is_mouse_button_down(MouseButton::Left) {
+        let m = mouse_position();
+        let dx = m.0 / screen_width();
+        let dy = m.1 / screen_height();
+        let ungo = screen_height() / (screen_width() / 320.);
+
+        xx = dx * 320.;
+        yy = ungo * dy;
+
+        globals.MOUSE = (xx, yy);
+        draw_rectangle(xx as f32, yy as f32, 16., 16., RED);
+        println!("x {} y {}", xx, yy);
+    }
     menu::cycle(globals);
+    return globals;
 }
+
 pub fn player_controls(player: &mut Ent) {
     if player.grounded {
         let modifier: f32 = if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
