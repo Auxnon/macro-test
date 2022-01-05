@@ -20,7 +20,7 @@ pub struct LuaCore<'a> {
     map: HashMap<String, Function<'a>>,
 }
 
-impl<'a, 'scope> LuaCore<'a> {
+impl<'a> LuaCore<'a> {
     pub fn new() -> LuaCore<'a> {
         let lua = Lua::new();
 
@@ -32,37 +32,42 @@ impl<'a, 'scope> LuaCore<'a> {
 
     pub fn init(
         &'a self,
-        scope: &'a Scope<'a, 'scope>,
-        entity_factory: &'a EntFactory,
+        entity_factory: Arc<Mutex<OnceCell<EntFactory>>>,
         meshes: Rc<RefCell<Vec<Ent<'a>>>>,
-    ) -> &Scope<'a, 'scope> {
+    ) {
         let globals = self.lua.globals();
 
         let multi = self.lua.create_function(|_, (x, y): (f32, f32)| Ok(x * y));
         // let t = multi.unwrap();
         globals.set("multi", multi.unwrap());
 
-        // let closure = |_, (str, x, y): (String, f32, f32)| {
-        //     let mut ent = entity_factory.create_ent(&str, self);
-        //     ent.pos.x = x;
-        //     ent.pos.y = y;
-        //     let lua_ent = ent.to_lua();
-        //     let mut m = meshes.borrow_mut();
-        //     m.push(ent);
-        //     println!("added ent, now sized at {}", m.len());
-        //     Ok(lua_ent)
-        //     //Ok(&ent.to_lua())
-        // };
+        let closure = |_, (str, x, y): (String, f32, f32)| {
+            let result = entity_factory.lock().unwrap().get_mut();
+            if result.is_some() {
+                // let ent = result.unwrap().create_ent(&str, &self);
+                // ent.pos.x = x;
+                // ent.pos.y = y;
+                // let lua_ent = ent.to_lua();
+                // // let mut m = meshes.borrow_mut();
+                // // m.push(ent);
+                // // println!("added ent, now sized at {}", m.len());
+                // Ok(lua_ent)
+                Ok(LuaEnt::empty())
+            } else {
+                Ok(LuaEnt::empty())
+            }
 
-        // globals.set("spawn", {
-        //     let m = scope.create_function(closure);
-        //     m.unwrap()
-        // });
+            //Ok(&ent.to_lua())
+        };
+
+        globals.set("spawn", {
+            let m = self.lua.create_function(closure);
+            m.unwrap()
+        });
 
         let default_func = self.lua.create_function(|_, e: f32| Ok(e)).unwrap();
         globals.set("default_func", default_func);
         drop(globals);
-        scope
     }
 
     pub fn test(&self) {}
@@ -145,32 +150,32 @@ impl<'a, 'scope> LuaCore<'a> {
     //pub fn entity_run(ent: &mut Ent, delta: f32) {}
 }
 
-pub fn scope_test<'b, 'scope>(
-    scope: &Scope<'scope, 'b>,
-    ent_factory: &'b EntFactory,
-    lua_core: &'b LuaCore,
-    meshes: Rc<RefCell<Vec<Ent<'b>>>>,
-) {
-    let closure = move |_, (str, x, y): (String, f32, f32)| {
-        let mut ent = ent_factory.create_ent(&str, &lua_core);
-        ent.pos.x = x;
-        ent.pos.y = y;
-        let lua_ent = ent.to_lua();
-        let res = meshes.try_borrow_mut();
-        if res.is_ok() {
-            let mut m = res.unwrap();
-            m.push(ent);
-            println!("added ent, now sized at {}", m.len());
-        } else {
-            println!("cannot add ent, overworked!")
-        }
-        Ok(lua_ent)
-        //Ok(&ent.to_lua())
-    };
+// pub fn scope_test<'b, 'scope>(
+//     scope: &Scope<'scope, 'b>,
+//     ent_factory: &'b EntFactory,
+//     lua_core: &'b LuaCore,
+//     meshes: Rc<RefCell<Vec<Ent<'b>>>>,
+// ) {
+//     let closure = move |_, (str, x, y): (String, f32, f32)| {
+//         let mut ent = ent_factory.create_ent(&str, &lua_core);
+//         ent.pos.x = x;
+//         ent.pos.y = y;
+//         let lua_ent = ent.to_lua();
+//         let res = meshes.try_borrow_mut();
+//         if res.is_ok() {
+//             let mut m = res.unwrap();
+//             m.push(ent);
+//             println!("added ent, now sized at {}", m.len());
+//         } else {
+//             println!("cannot add ent, overworked!")
+//         }
+//         Ok(lua_ent)
+//         //Ok(&ent.to_lua())
+//     };
 
-    let lua_globals = lua_core.lua.globals();
-    lua_globals.set("spawn", {
-        let m = scope.create_function(closure);
-        m.unwrap()
-    });
-}
+//     let lua_globals = lua_core.lua.globals();
+//     lua_globals.set("spawn", {
+//         let m = scope.create_function(closure);
+//         m.unwrap()
+//     });
+// }

@@ -6,13 +6,13 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-miniquad = "0.3.0-alpha.36"
+miniquad = "0.2.55"
 
 macroquad = "0.3.6"
 rand = "0.8.4"
-ron = "0.6.5"
+ron = "0.7.0"
 serde ="^1.0"
 gltf ="0.16.0"
 itertools="0.10.1"
-mlua ={version= "^0.6.3", features=["lua54","vendored"]}
+mlua ={version= "^0.7.0", features=["lua54","vendored"]}
 once_cell =""

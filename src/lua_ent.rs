@@ -45,6 +45,21 @@ impl UserData for LuaEnt {
         fields.add_field_method_set("vel_z", |_, this, vel_z: f32| Ok(this.vel_z = vel_z));
     }
 }
+impl LuaEnt {
+    pub fn empty() -> LuaEnt {
+        LuaEnt {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+            rot_x: 0.,
+            rot_y: 0.,
+            rot_z: 0.,
+            vel_x: 0.,
+            vel_y: 0.,
+            vel_z: 0.,
+        }
+    }
+}
 // pub fn new() -> LuaEnt {
 //     return LuaEnt { x: 10., y: 12. };
 // }

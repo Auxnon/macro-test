@@ -2,8 +2,10 @@ use crate::Ent;
 use crate::{lua_define::LuaCore, three_loader};
 use gltf::Texture;
 use macroquad::prelude::*;
+use once_cell::sync::OnceCell;
 use ron::de::from_reader;
 use serde::Deserialize;
+use std::sync::{Arc, Mutex};
 use std::{
     collections::HashMap,
     fs::{read_dir, File},
@@ -147,7 +149,11 @@ impl<'a> EntFactory {
             None => &self.default_ent_schema,
         }
     }
-    pub fn create_ent(&'a self, schema: &String, lua_core: &'a LuaCore) -> Ent<'a> {
+    pub fn create_ent(
+        &'a self,
+        schema: &String,
+        lua_core: Arc<Mutex<OnceCell<LuaCore<'a>>>>,
+    ) -> Ent<'a> {
         //.or_insert(EntSchema::default());
 
         let sc = self.get_schema(schema);
@@ -156,9 +162,14 @@ impl<'a> EntFactory {
         //let f = get_logic("player".to_owned());
         //let r = rand::gen_range(0, 2);
         //let fuc = get_logic(sc.logic.clone(), self.lua_core);
-        let fuc = lua_core.get(sc.logic.clone());
+        let fuc = lua_core
+            .lock()
+            .unwrap()
+            .get()
+            .unwrap()
+            .get(sc.logic.clone());
         println!("::ent:: we loaded func for {}", sc.logic.clone());
-        Ent::new(sc, fuc)
+        Ent::new(sc, fuc.clone())
         // Ent {
         //     schema: sc,
         //     pos: Vec2::new(0., 0.),

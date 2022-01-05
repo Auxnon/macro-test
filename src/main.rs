@@ -34,8 +34,10 @@ use layer::Layer;
 use logic::get_logic;
 use lua_ent::LuaEnt;
 use mlua::{Lua, Scope};
+use once_cell::sync::OnceCell;
 
 use std::cell::RefCell;
+use std::error::Error;
 use std::process::exit;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -43,7 +45,7 @@ use tile::Tile;
 use tile::TileBlock;
 use tile_factory::init_tiles;
 
-use crate::lua_define::{scope_test, LuaCore};
+use crate::lua_define::LuaCore;
 
 fn conf() -> Conf {
     Conf {
@@ -55,11 +57,19 @@ fn conf() -> Conf {
     }
 }
 
+static ent_factory: Arc<Mutex<OnceCell<EntFactory>>> = Arc::new(Mutex::new(OnceCell::new()));
+static lua_core: Arc<Mutex<OnceCell<LuaCore>>> = Arc::new(Mutex::new(OnceCell::new()));
+
 #[macroquad::main(conf())]
 async fn main() {
     // 320 x 192
-    let ent_factory = EntFactory::new().await;
-    let lua_core = LuaCore::new();
+    //let ent_factory = EntFactory::new().await;
+    let pre_ent = EntFactory::new().await;
+    ent_factory.lock().unwrap().get_or_init(|| pre_ent);
+
+    let pre_lua = LuaCore::new();
+    lua_core.lock().unwrap().get_or_init(|| pre_lua);
+
     let mut meshes_vec: Vec<Ent> = vec![];
     let mut meshes = Rc::new(RefCell::new(meshes_vec));
 
@@ -116,140 +126,145 @@ async fn main() {
     let tile_template: tile::TileTemplate = tile::create_template("assets/wood").await;
     let mut tiles: TileBlock = TileBlock::new(0, 0, &tile_template, ar);
 
-    let scope_result: Result<u32, mlua::Error> = lua_core.lua.scope(|scope: &Scope| {
-        //lua_core.init(scope, &ent_factory, Rc::clone(&meshes));
+    //lua_core.init(scope, &ent_factory, Rc::clone(&meshes));
 
-        scope_test(scope, &ent_factory, &lua_core, Rc::clone(&meshes));
-        // let make_ent = |str: String| {
-        //     let ee = Rc::clone(&ent_factory);
-        //     ee.create_ent(&str, &lua_core)
-        // };
-        macro_rules! make_ent {
-            ($a:expr) => {
-                (ent_factory.create_ent($a, &lua_core));
-            };
-        }
+    // scope_test(scope, &ent_factory, &lua_core, Rc::clone(&meshes));
+    // let make_ent = |str: String| {
+    //     let ee = Rc::clone(&ent_factory);
+    //     ee.create_ent(&str, &lua_core)
+    // };
+    let ent_fact = Arc::clone(&ent_factory).lock().unwrap().get().unwrap();
 
-        let house = make_ent!(&"house".to_string()); //ent_factory.create_ent(&"house".to_string(), &lua_core);
-        meshes.borrow_mut().push(house);
-        for i in 1..6 {
-            let mut dude = make_ent!(&"dude".to_string());
-            dude.accessory = Some(ent_factory.get_schema("axe"));
-            dude.pos.x = rand::gen_range(-2., 2.);
-            dude.pos.z = rand::gen_range(-2., 2.);
-            meshes.borrow_mut().push(dude);
-        }
+    // macro_rules! make_ent {
+    //     ($a:expr) => {
+    //         ent_factory
+    //             .lock()
+    //             .unwrap()
+    //             .get()
+    //             .unwrap()
+    //             .create_ent($a, lua_core);
+    //     };
+    // }
 
-        let mut maker = make_ent!(&"maker".to_string());
-        maker.pos.x = -3.;
-        maker.pos.z = -3.;
-        meshes.borrow_mut().push(maker);
-
-        /***
-         * Test Two
-         */
-        let mut layer: Layer = Layer::new(1., 0., 0.);
-        layer.add_tile(tiles);
-
-        let mut tiles3: TileBlock = TileBlock::new(0, 0, &tile_template, ar);
-        let mut layer3: Layer = Layer::new(1., 0., 0.);
-        layer3.add_tile(tiles3);
-
-        let mut player = make_ent!(&"kiwi".to_string());
-        player.set_xy(16. * 14., 16. * 6.);
-        //layer.add_ent(player);
-
-        // for i in 0..10 {
-        //     let mut player2 = ent_factory.create_ent("kiwi");
-        //     player2.set_xy(16. * (8. + i as f32), 16. * 6.);
-        //     layer.add_ent(player2);
-        // }
-
-        // let mut kp = ent_factory.create_ent("kiwi-portrait");
-        // kp.set_xy(16. * 14., 16. * 6.);
-        // layer.add_ent(kp);
-
-        let mut npc = make_ent!(&"birb-npc".to_string());
-        npc.set_xy(16. * 12., 16. * 6.);
-        //layer.add_ent(npc);
-
-        /***
-         * END Test Two
-         */
-
-        let iwidth = (screen_width() as u16) / 4;
-        let iheight = (screen_height() as u16) / 4;
-
-        let img_pull = get_screen_data();
-        /*Image {
-            width: 320,
-            height: 192,
-            bytes: vec![],
-        };*/
-        let mut render_pass_first = Texture2D::from_image(&img_pull);
-        render_pass_first.set_filter(FilterMode::Nearest);
-
-        let mut render_pass_second = Texture2D::from_image(&img_pull);
-        render_pass_second.set_filter(FilterMode::Nearest);
-
-        let screen_material = load_material(
-            &std::fs::read_to_string("src/shader.vert").expect("uh oh bad glsl file"),
-            &std::fs::read_to_string("src/shader.frag").expect("uh oh bad glsl file"),
-            MaterialParams {
-                uniforms: vec![
-                    ("Center".to_owned(), UniformType::Float2),
-                    ("ray".to_owned(), UniformType::Float2),
-                    ("resolution".to_owned(), UniformType::Float2),
-                    ("ratio".to_owned(), UniformType::Float1),
-                    ("time".to_owned(), UniformType::Float1),
-                ],
-                textures: vec![
-                    //"Texture".to_owned() // this one is defined by Macroquad. assign other manually if needed.
-                    "normals".to_owned(),
-                    "albedo".to_owned(),
-                    "remap".to_owned(),
-                ],
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut incr_time: f32 = 0.;
-
-        let mut last_step_time = 0.;
-        let mut last_real_time = 0.;
-
-        screen_material.set_texture("remap", color_lookup);
-
-        let mut last_sw = screen_width();
-        let mut last_sh = screen_height();
-
-        // render_pass_first.update(&get_screen_data());
-        // render_pass_second.update(&get_screen_data());
-        loop {
-            game_loop(
-                screen_material,
-                incr_time,
-                last_step_time,
-                last_real_time,
-                render_pass_first,
-                render_pass_second,
-                grass_test,
-                guy_test,
-                &mut globals,
-                Rc::clone(&meshes),
-                &mut layer,
-                &mut layer3,
-                last_sw,
-                last_sh,
-            );
-        }
-    });
-
-    if scope_result.is_err() {
-        println!("yikes, lua failed real hard, quitting");
-        //exit(0);
+    let house = ent_fact.create_ent(&"house".to_string(), Arc::clone(&lua_core)); //ent_factory.create_ent(&"house".to_string(), &lua_core);
+    meshes.borrow_mut().push(house);
+    for i in 1..6 {
+        let mut dude = ent_fact.create_ent(&"dude".to_string(), Arc::clone(&lua_core));
+        dude.accessory = Some(ent_fact.get_schema("axe"));
+        dude.pos.x = rand::gen_range(-2., 2.);
+        dude.pos.z = rand::gen_range(-2., 2.);
+        meshes.borrow_mut().push(dude);
     }
+
+    let mut maker = ent_fact.create_ent(&"maker".to_string(), Arc::clone(&lua_core));
+    maker.pos.x = -3.;
+    maker.pos.z = -3.;
+    meshes.borrow_mut().push(maker);
+
+    /***
+     * Test Two
+     */
+    let mut layer: Layer = Layer::new(1., 0., 0.);
+    layer.add_tile(tiles);
+
+    let mut tiles3: TileBlock = TileBlock::new(0, 0, &tile_template, ar);
+    let mut layer3: Layer = Layer::new(1., 0., 0.);
+    layer3.add_tile(tiles3);
+
+    let mut player = ent_fact.create_ent(&"kiwi".to_string(), Arc::clone(&lua_core));
+    player.set_xy(16. * 14., 16. * 6.);
+    //layer.add_ent(player);
+
+    // for i in 0..10 {
+    //     let mut player2 = ent_factory.create_ent("kiwi");
+    //     player2.set_xy(16. * (8. + i as f32), 16. * 6.);
+    //     layer.add_ent(player2);
+    // }
+
+    // let mut kp = ent_factory.create_ent("kiwi-portrait");
+    // kp.set_xy(16. * 14., 16. * 6.);
+    // layer.add_ent(kp);
+
+    let mut npc = ent_fact.create_ent(&"birb-npc".to_string(), Arc::clone(&lua_core));
+    npc.set_xy(16. * 12., 16. * 6.);
+    //layer.add_ent(npc);
+
+    /***
+     * END Test Two
+     */
+
+    let iwidth = (screen_width() as u16) / 4;
+    let iheight = (screen_height() as u16) / 4;
+
+    let img_pull = get_screen_data();
+    /*Image {
+        width: 320,
+        height: 192,
+        bytes: vec![],
+    };*/
+    let mut render_pass_first = Texture2D::from_image(&img_pull);
+    render_pass_first.set_filter(FilterMode::Nearest);
+
+    let mut render_pass_second = Texture2D::from_image(&img_pull);
+    render_pass_second.set_filter(FilterMode::Nearest);
+
+    let screen_material = load_material(
+        &std::fs::read_to_string("src/shader.vert").expect("uh oh bad glsl file"),
+        &std::fs::read_to_string("src/shader.frag").expect("uh oh bad glsl file"),
+        MaterialParams {
+            uniforms: vec![
+                ("Center".to_owned(), UniformType::Float2),
+                ("ray".to_owned(), UniformType::Float2),
+                ("resolution".to_owned(), UniformType::Float2),
+                ("ratio".to_owned(), UniformType::Float1),
+                ("time".to_owned(), UniformType::Float1),
+            ],
+            textures: vec![
+                //"Texture".to_owned() // this one is defined by Macroquad. assign other manually if needed.
+                "normals".to_owned(),
+                "albedo".to_owned(),
+                "remap".to_owned(),
+            ],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let mut incr_time: f32 = 0.;
+
+    let mut last_step_time = 0.;
+    let mut last_real_time = 0.;
+
+    screen_material.set_texture("remap", color_lookup);
+
+    let mut last_sw = screen_width();
+    let mut last_sh = screen_height();
+
+    // render_pass_first.update(&get_screen_data());
+    // render_pass_second.update(&get_screen_data());
+    loop {
+        game_loop(
+            screen_material,
+            incr_time,
+            last_step_time,
+            last_real_time,
+            render_pass_first,
+            render_pass_second,
+            grass_test,
+            guy_test,
+            &mut globals,
+            Rc::clone(&meshes),
+            &mut layer,
+            &mut layer3,
+            last_sw,
+            last_sh,
+        );
+    }
+
+    // if scope_result.is_err() {
+    //     println!("yikes, lua failed real hard, quitting");
+    //     //exit(0);
+    // }
     println!("complete");
     exit(0);
 }
